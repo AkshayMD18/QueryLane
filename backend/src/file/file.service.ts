@@ -1,17 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { Files } from './file.entity';
 
 @Injectable()
 export class FileService {
-    async parseFile(file: Express.Multer.File): Promise<{ columns: string[], columnTypes: Record<string, string>, rowCount: number, sampleData: any[] }> {
+    constructor(
+        @InjectRepository(Files)
+        private fileRepository: Repository<Files>,
+        private dataSource: DataSource,
+    ) { }
+
+    // get all files 
+    async getAllFiles() {
+        return this.fileRepository.find();
+    }
+
+    // get table data
+    async getTableData(name: string, page: number, limit: number) {
+        const fileMetadata = await this.fileRepository.findOne({ where: { name } });
+        if (!fileMetadata) {
+            throw new BadRequestException('File not found');
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        const data = await queryRunner.query(`SELECT * FROM "${fileMetadata.tableName}" LIMIT ${limit} OFFSET ${page * limit}`);
+        await queryRunner.release();
+
+        return data;
+    }
+
+    // parse and save file
+    async parseAndSaveFile(file: Express.Multer.File, name: string): Promise<{ columns: string[], columnTypes: Record<string, string>, rowCount: number, sampleData: any[] }> {
+        // 1. Check if name is unique
+        const existingFile = await this.fileRepository.findOne({ where: { name } });
+        if (existingFile) {
+            throw new BadRequestException('File with this name already exists');
+        }
+
         return new Promise((resolve, reject) => {
             const results: any[] = [];
             const stream = Readable.from(file.buffer);
             stream
                 .pipe(csv())
                 .on('data', (data) => results.push(data))
-                .on('end', () => {
+                .on('end', async () => {
                     if (results.length === 0) {
                         return resolve({ columns: [], columnTypes: {}, rowCount: 0, sampleData: [] });
                     }
@@ -22,19 +58,70 @@ export class FileService {
                     // Infer types from the first few rows
                     columns.forEach(col => {
                         const types = results.slice(0, 10).map(row => this.inferType(row[col]));
-                        // Get the most frequent type or fallback to string
                         columnTypes[col] = this.getMostFrequent(types);
                     });
 
-                    resolve({
-                        columns,
-                        columnTypes,
-                        rowCount: results.length,
-                        sampleData: results.slice(0, 5), // Keep a small sample for the LLM
-                    });
+                    try {
+                        // Create a safe table name from the unique name
+                        const tableName = name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+
+                        // 2. Create the SQL table dynamically
+                        await this.createDynamicTable(tableName, columns, columnTypes);
+
+                        // 3. Insert and data into the table
+                        await this.insertData(tableName, results);
+
+                        // 4. Save metadata in Files entity
+                        const newFile = this.fileRepository.create({
+                            name,
+                            tableName,
+                            summary: `Contains ${results.length} rows and ${columns.length} columns.`
+                        });
+                        await this.fileRepository.save(newFile);
+
+                        resolve({
+                            columns,
+                            columnTypes,
+                            rowCount: results.length,
+                            sampleData: results.slice(0, 5),
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
                 })
                 .on('error', (error) => reject(error));
         });
+    }
+
+    private async createDynamicTable(tableName: string, columns: string[], columnTypes: Record<string, string>) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+
+        const columnDefinitions = columns.map(col => {
+            const type = columnTypes[col];
+            let sqliteType = 'TEXT';
+            if (type === 'number') sqliteType = 'REAL';
+            if (type === 'boolean') sqliteType = 'INTEGER'; // SQLite uses 0/1
+            return `"${col}" ${sqliteType}`;
+        }).join(', ');
+
+        await queryRunner.query(`CREATE TABLE IF NOT EXISTS "${tableName}" (id INTEGER PRIMARY KEY AUTOINCREMENT, ${columnDefinitions})`);
+        await queryRunner.release();
+    }
+
+    private async insertData(tableName: string, data: any[]) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+
+        for (const row of data) {
+            const columns = Object.keys(row).map(col => `"${col}"`).join(', ');
+            const placeholders = Object.keys(row).map(() => '?').join(', ');
+            const values = Object.values(row);
+
+            await queryRunner.query(`INSERT INTO "${tableName}" (${columns}) VALUES (${placeholders})`, values);
+        }
+
+        await queryRunner.release();
     }
 
     private inferType(value: string): string {
@@ -53,4 +140,5 @@ export class FileService {
         return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, 'string');
     }
 }
+
 

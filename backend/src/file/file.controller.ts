@@ -1,24 +1,45 @@
 import {
   Controller,
   Post,
+  Get,
+  Param,
   UploadedFile,
   UseInterceptors,
+  Body,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from './file.service';
 import { AgentPlanner } from '../agents/agent.planner';
+import { PaginationDto } from 'src/dto/dto.pagination';
 
-@Controller('file')
+@Controller('files')
 export class FileController {
   constructor(
     private readonly fileService: FileService,
     private readonly agentPlanner: AgentPlanner,
   ) { }
 
-  @Post('upload')
+  @Get('/')
+  async getFiles() {
+    return this.fileService.getAllFiles();
+  }
+
+  @Get(':name')
+  async getTableData(
+    @Param('name')
+    name: string,
+    @Query() paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+    return this.fileService.getTableData(name, page || 0, limit || 10);
+  }
+
+  @Post()
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const data = await this.fileService.parseFile(file);
-    return this.agentPlanner.generateAnalysisTasks(data);
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('name') name: string,
+  ) {
+    return await this.fileService.parseAndSaveFile(file, name);
   }
 }
