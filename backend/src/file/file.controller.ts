@@ -25,6 +25,11 @@ export class FileController {
     return this.fileService.getAllFiles();
   }
 
+  @Get('/columns/:name')
+  async getColumns(@Param('name') name: string) {
+    return this.fileService.getColumns(name);
+  }
+
   @Get(':name')
   async getTableData(
     @Param('name')

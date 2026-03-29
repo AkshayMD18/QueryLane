@@ -4,6 +4,7 @@ import { Readable } from 'stream';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Files } from './file.entity';
+import { mapSqliteType } from 'src/helper/helper.tableType';
 
 @Injectable()
 export class FileService {
@@ -16,6 +17,41 @@ export class FileService {
     // get all files 
     async getAllFiles() {
         return this.fileRepository.find();
+    }
+
+    async getColumns(name: string) {
+        const fileMetadata = await this.fileRepository.findOne({
+            where: { name },
+        });
+
+        if (!fileMetadata) {
+            throw new BadRequestException('File not found');
+        }
+
+        const tableName = fileMetadata.tableName;
+
+        // ✅ validate table name (IMPORTANT)
+        if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+            throw new BadRequestException('Invalid table name');
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+
+        // 🔥 SQLite schema query
+        const rawColumns = await queryRunner.query(
+            `PRAGMA table_info(${tableName})`
+        );
+
+        await queryRunner.release();
+
+        // 🔧 format for frontend
+        const columns = rawColumns.map((col: any) => ({
+            name: col.name,
+            type: mapSqliteType(col.type),
+        }));
+
+        return columns;
     }
 
     // get table data
