@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
-import Home from "./pages/Home";
+import HomePage from "./pages/homePage";
 
 const routes: RouteObject[] = [
     {
         path: "/",
-        element: <Home />,
+        element: <HomePage />,
     },
     {
         path: "*",
