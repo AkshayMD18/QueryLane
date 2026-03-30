@@ -10,11 +10,11 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import type { file } from "@/type";
+import { useNavigate } from "react-router-dom";
 
 const HomePage: React.FC = () => {
     const { data: files } = useFiles();
-
-    console.log(files);
+    const navigate = useNavigate();
 
     return (
         <div className="flex min-h-screen w-full flex-col items-center bg-background text-foreground p-8">
@@ -26,7 +26,6 @@ const HomePage: React.FC = () => {
                         <TableCaption>List of uploaded tables</TableCaption>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID</TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Table Name</TableHead>
                                 <TableHead>Summary</TableHead>
@@ -34,8 +33,7 @@ const HomePage: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                             {files.map((file: file) => (
-                                <TableRow key={file.id}>
-                                    <TableCell>{file.id}</TableCell>
+                                <TableRow key={file.name} onClick={() => navigate(`/file/${file.tableName}`)}>
                                     <TableCell>{file.name}</TableCell>
                                     <TableCell>{file.tableName}</TableCell>
                                     <TableCell>{file.summary}</TableCell>

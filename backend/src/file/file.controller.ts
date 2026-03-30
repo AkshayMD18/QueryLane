@@ -36,7 +36,7 @@ export class FileController {
     name: string,
     @Query() paginationDto: PaginationDto) {
     const { page, limit } = paginationDto;
-    return this.fileService.getTableData(name, page || 0, limit || 10);
+    return this.fileService.getTableData(name, page, limit);
   }
 
   @Post()

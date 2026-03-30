@@ -16,7 +16,9 @@ export class FileService {
 
     // get all files 
     async getAllFiles() {
-        return this.fileRepository.find();
+        return this.fileRepository.find({
+            select: ['name', 'tableName', 'summary'], // only these columns
+        });
     }
 
     async getColumns(name: string) {
@@ -55,7 +57,7 @@ export class FileService {
     }
 
     // get table data
-    async getTableData(name: string, page: number, limit: number) {
+    async getTableData(name: string, page?: number, limit?: number) {
         const fileMetadata = await this.fileRepository.findOne({ where: { name } });
         if (!fileMetadata) {
             throw new BadRequestException('File not found');
@@ -63,7 +65,7 @@ export class FileService {
 
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
-        const data = await queryRunner.query(`SELECT * FROM "${fileMetadata.tableName}" LIMIT ${limit} OFFSET ${page * limit}`);
+        const data = await queryRunner.query(`SELECT * FROM "${fileMetadata.tableName}" LIMIT ${limit || 20} OFFSET ${(page || 0) * (limit || 20)}`);
         await queryRunner.release();
 
         return data;
