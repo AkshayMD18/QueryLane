@@ -7,13 +7,14 @@ export class LlmserviceService {
 
     constructor() {
         this.model = new ChatOpenRouter(
-            "openai/gpt-oss-20b",
+            "openai/gpt-oss-20b:free",
             {
                 apiKey: process.env.OPENROUTER_API_KEY,
                 temperature: 0.8,
             }
         );
     }
+
     async callOpenRouter(prompt: string) {
         const response = await this.model.invoke([
             { role: 'user', content: prompt }

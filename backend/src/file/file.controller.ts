@@ -10,14 +10,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from './file.service';
-import { AgentPlanner } from '../agents/agent.planner';
+import { AgentsService } from 'src/agents/agents.service';
 import { PaginationDto } from 'src/dto/dto.pagination';
 
 @Controller('files')
 export class FileController {
   constructor(
     private readonly fileService: FileService,
-    private readonly agentPlanner: AgentPlanner,
+    private readonly agentsService: AgentsService,
   ) { }
 
   @Get('/')

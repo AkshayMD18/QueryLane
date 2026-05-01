@@ -2,16 +2,17 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Files } from './file.entity';
-import { mapSqliteType, validateTableName } from 'src/helper';
+import { mapSqliteType } from 'src/helper';
+import { FileRepository } from './file.repository';
 
 @Injectable()
 export class FileService {
     constructor(
         @InjectRepository(Files)
         private fileRepository: Repository<Files>,
-        private dataSource: DataSource,
+        private fileRepo: FileRepository,
     ) { }
 
 
@@ -23,16 +24,11 @@ export class FileService {
 
     async getColumns(name: string) {
         const fileMetadata = await this.fileRepository.findOne({ where: { name } });
-
         if (!fileMetadata) {
             throw new BadRequestException('File not found');
         }
 
-        const tableName = validateTableName(fileMetadata.tableName);
-
-        const rawColumns = await this.dataSource.query(
-            `PRAGMA table_info("${tableName}")`
-        );
+        const { rawColumns } = await this.fileRepo.fetchTableDetails(fileMetadata.tableName);
 
         return rawColumns.map((col: any) => ({
             name: col.name,
@@ -46,15 +42,32 @@ export class FileService {
             throw new BadRequestException('File not found');
         }
 
-        const tableName = validateTableName(fileMetadata.tableName);
-
-        return this.dataSource.createQueryBuilder()
-            .select('*')
-            .from(tableName, 't')
-            .limit(limit || 20)
-            .offset((page || 0) * (limit || 20))
-            .getRawMany();
+        return this.fileRepo.getTableData(fileMetadata.tableName, page || 0, limit || 20);
     }
+
+    async getAgentTableData(name: string) {
+        const fileMetadata = await this.fileRepository.findOne({ where: { name } });
+        if (!fileMetadata) {
+            throw new BadRequestException('File not found');
+        }
+
+        const { rawColumns, sampleData, rowCount } = await this.fileRepo.fetchTableDetails(fileMetadata.tableName);
+
+        const columns = rawColumns.map((col: any) => col.name);
+        const columnTypes: Record<string, string> = {};
+        rawColumns.forEach((col: any) => {
+            columnTypes[col.name] = mapSqliteType(col.type);
+        });
+
+        return {
+            tableName: fileMetadata.tableName,
+            columns,
+            columnTypes,
+            sampleData,
+            rowCount,
+        };
+    }
+
 
     async parseAndSaveFile(
         file: Express.Multer.File,
@@ -103,8 +116,6 @@ export class FileService {
                             .replace(/[^a-zA-Z0-9]/g, '_')
                             .toLowerCase();
 
-                        validateTableName(tableName);
-
                         await this.createDynamicTable(tableName, columns, columnTypes);
 
                         await this.insertDataBatch(tableName, results);
@@ -148,12 +159,7 @@ export class FileService {
             })
             .join(', ');
 
-        await this.dataSource.query(`
-            CREATE TABLE IF NOT EXISTS "${tableName}" (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ${columnDefs}
-            )
-        `);
+        await this.fileRepo.createDynamicTable(tableName, columnDefs);
     }
 
     private async insertDataBatch(tableName: string, data: any[]) {
@@ -176,10 +182,7 @@ export class FileService {
                 })
                 .join(', ');
 
-            await this.dataSource.query(
-                `INSERT INTO "${tableName}" (${colNames}) VALUES ${rowsSql}`,
-                values
-            );
+            await this.fileRepo.insertDataBatch(tableName, colNames, rowsSql, values);
         }
     }
 
