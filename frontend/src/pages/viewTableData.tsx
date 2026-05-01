@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useTableData, useColumns } from "@/hook";
+import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery } from "@/hook";
 import { DataTable, QueryModal, QueryResults } from "@/components";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,26 @@ export const ViewTable: React.FC = () => {
     const { tableName } = useParams();
     const { data: tableData } = useTableData(tableName!);
     const { data: columns } = useColumns(tableName!);
+    const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
+    const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
+
+    const handleQueryExecute = async (userQuery: string) => {
+        try {
+            const generationResponse = await generateQuery(userQuery);
+            const sqlQuery = generationResponse.SQLiteQuery;
+
+            if (!sqlQuery) throw new Error("Failed to generate SQL query");
+
+            const result = await executeAndStoreQuery({
+                query: sqlQuery,
+                tableName: tableName!
+            });
+
+            console.log("Query Results:", result);
+        } catch (error) {
+            console.error("Query Execution failed:", error);
+        }
+    };
 
     return (
         <div className="p-8">
@@ -20,7 +40,9 @@ export const ViewTable: React.FC = () => {
                 actions={
                     <QueryModal
                         trigger={<Button>Query</Button>}
-                        onExecute={(query) => console.log("Executing:", query)}
+                        onExecute={handleQueryExecute}
+                        isLoading={isGeneratingQuery || isExecutingQuery}
+
                     />
                 }
             />

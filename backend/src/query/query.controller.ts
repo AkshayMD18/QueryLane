@@ -6,8 +6,8 @@ export class QueryController {
     constructor(private readonly queryService: QueryService) { }
 
     @Post()
-    async executeQuery(@Body('query') query: string) {
-        const result = await this.queryService.executeQuery(query);
+    async executeQuery(@Body('query') query: string, @Body('tableName') tableName: string) {
+        const result = await this.queryService.executeAndStorQuery(query, tableName);
         return result;
     }
 } 

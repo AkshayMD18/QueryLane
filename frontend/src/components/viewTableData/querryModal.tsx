@@ -14,8 +14,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Field, FieldGroup } from "@/components/ui/field"
 import type { QueryModalProps } from "@/type/table";
+import { Spinner } from "@/components/ui/spinner";
 
-export const QueryModal = ({ trigger, onExecute }: QueryModalProps) => {
+export const QueryModal = ({ trigger, onExecute, isLoading }: QueryModalProps) => {
     const [query, setQuery] = useState("")
 
     const handleExecute = (e: React.FormEvent) => {
@@ -47,17 +48,19 @@ export const QueryModal = ({ trigger, onExecute }: QueryModalProps) => {
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     autoComplete="off"
+                                    disabled={isLoading}
                                 />
                             </Field>
                         </FieldGroup>
                     </div>
 
                     <DialogFooter className="sm:justify-end">
-                        <DialogClose render={<Button type="button" variant="outline" />}>
+                        <DialogClose render={<Button type="button" variant="outline" disabled={isLoading} />}>
                             Cancel
                         </DialogClose>
-                        <Button type="submit">
-                            Execute Query
+                        <Button type="submit" disabled={isLoading || !query.trim()}>
+                            {isLoading && <Spinner className="mr-2 h-4 w-4" />}
+                            {isLoading ? "Executing..." : "Execute Query"}
                         </Button>
                     </DialogFooter>
                 </form>

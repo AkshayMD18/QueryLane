@@ -16,11 +16,10 @@ export class LlmserviceService {
     }
 
     async callOpenRouter(prompt: string) {
-        console.log("PROMPT:", prompt);
+
         const response = await this.model.invoke([
             { role: 'user', content: prompt }
         ]);
-        console.log("OPENROUTER RESPONSE:", response.content);
         return response.content as string;
     }
 }
