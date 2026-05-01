@@ -23,4 +23,28 @@ export class QueryService {
             throw error;
         }
     }
+
+    async executeQuery(query: string) {
+        try {
+            const validatedQuery = validateSelectQuery(query);
+            const result = await this.dataSource.query(validatedQuery);
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getAllQueriesForTable(tableName: string) {
+        try {
+            const result = await this.dataSource
+                .createQueryBuilder()
+                .select("*")
+                .from("queries", "q")
+                .where("q.tableName = :tableName", { tableName })
+                .getRawMany();
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    }
 }

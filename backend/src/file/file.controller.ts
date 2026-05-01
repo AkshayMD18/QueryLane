@@ -5,7 +5,6 @@ import {
   Param,
   UploadedFile,
   UseInterceptors,
-  Body,
   Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -17,7 +16,6 @@ import { PaginationDto } from 'src/dto/dto.pagination';
 export class FileController {
   constructor(
     private readonly fileService: FileService,
-    private readonly agentsService: AgentsService,
   ) { }
 
   @Get('/')
