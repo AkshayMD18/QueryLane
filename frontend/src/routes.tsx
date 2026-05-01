@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import HomePage from "./pages/homePage";
-import { ViewTable } from "./pages/viewTable";
+import { ViewTable } from "./pages/viewTableData";
 
 const routes: RouteObject[] = [
     {

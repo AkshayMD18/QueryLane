@@ -11,16 +11,24 @@ import {
 } from "@/components/ui/table";
 import type { file } from "@/type";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const HomePage: React.FC = () => {
-    const { data: files } = useFiles();
+    const { data: files, isLoading } = useFiles();
     const navigate = useNavigate();
 
     return (
         <div className="flex min-h-screen w-full flex-col items-center bg-background text-foreground p-8">
             <h2 className="text-3xl font-bold mb-6">Available Data</h2>
 
-            {files && files.length > 0 ? (
+            {isLoading ? (
+                <div className="w-full space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    {Array.from({ length: 10 }).map((_, i) => (
+                        <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                </div>
+            ) : files && files.length > 0 ? (
                 <div className="w-full overflow-x-auto">
                     <Table className="w-full">
                         <TableCaption>List of uploaded tables</TableCaption>
