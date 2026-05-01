@@ -18,6 +18,7 @@ export class AgentsService {
             Your job is to:
             1. Understand the dataset
             2. Generate a list of SPECIFIC and ACTIONABLE analysis tasks
+            3. Ensure every task produces results that can be visualized on a graph (X–Y axis)
 
             STRICT RULES:
             - Output MUST be valid JSON
@@ -26,6 +27,7 @@ export class AgentsService {
             - Tasks must be concrete (e.g., "Calculate total sales per month")
             - Use ONLY the column names provided
             - Each task must include the required columns
+            - Avoid tasks that cannot be visualized (e.g., single scalar outputs like total count)
 
             OUTPUT FORMAT:
             {{
@@ -34,15 +36,25 @@ export class AgentsService {
                 "tasks": [
                     {{
                         "taskName": "string",
-                        "columns": ["column1", "column2"]
+                        "columns": ["column1", "column2"],
+                        "xAxis": "column_name",
+                        "yAxis": "column_name_or_aggregation"
                     }}
                 ]
             }}
 
             GUIDELINES:
-            - If a date column exists → include time-based tasks
-            - If numeric columns exist → include aggregations (avg, sum, etc.)
-            - If categorical columns exist → include grouping tasks
+            - Every task must map clearly to a graph:
+                - X-axis → categorical or time-based column
+                - Y-axis → numeric value or aggregation (SUM, AVG, COUNT, etc.)
+            Prefer these types of analyses:
+                - Aggregations (avg, sum, count) grouped by a category
+                - Time-series trends (if date column exists)
+                - Comparisons across categories
+                - Relationships between two numeric columns (scatter plots)
+            - If a date column exists → prioritize time-based graphs
+            - If numeric columns exist → use aggregations for Y-axis
+            - If categorical columns exist → use them for X-axis grouping
             - Do NOT generate vague tasks like "analyze trends"
             - Be specific and practical
             - Limit the number of tasks to 5

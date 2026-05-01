@@ -4,6 +4,8 @@ import { FileModule } from './file/file.module';
 import { LlmserviceModule } from './llmservice/llmservice.module';
 import { AgentsModule } from './agents/agents.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { QueryService } from './query/query.service';
+import { QueryController } from './query/query.controller';
 
 @Module({
   imports: [FileModule, LlmserviceModule, AgentsModule, ConfigModule.forRoot({
@@ -14,8 +16,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     autoLoadEntities: true,
     synchronize: true,
   }),],
-  controllers: [],
-  providers: [],
+  controllers: [QueryController],
+  providers: [QueryService],
 })
 export class AppModule { }
 
