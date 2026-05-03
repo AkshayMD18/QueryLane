@@ -1,13 +1,14 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { QueryService } from './query.service';
+import type { QueryResponse } from 'src/types/types.query';
 
 @Controller('query')
 export class QueryController {
     constructor(private readonly queryService: QueryService) { }
 
     @Post()
-    async executeQuery(@Body('query') query: string, @Body('tableName') tableName: string) {
-        const result = await this.queryService.executeAndStorQuery(query, tableName);
+    async executeQuery(@Body('query') query: QueryResponse, @Body('tableName') tableName: string) {
+        const result = await this.queryService.executeAndStoreQuery(query, tableName);
         return result;
     }
 

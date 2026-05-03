@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { validateSelectQuery } from 'src/helper';
+import type { QueryResponse } from 'src/types/types.query';
 
 @Injectable()
 export class QueryService {
 
     constructor(private readonly dataSource: DataSource) { }
-    async executeAndStorQuery(query: string, tableName: string) {
+    async executeAndStoreQuery(query: QueryResponse, tableName: string) {
         try {
-            const validatedQuery = validateSelectQuery(query);
+            const validatedQuery = validateSelectQuery(query.SQLiteQuery);
             const result = await this.dataSource.query(validatedQuery);
 
             await this.dataSource
                 .createQueryBuilder()
                 .insert()
                 .into("queries")
-                .values({ tableName, query })
+                .values({ tableName, query: query.SQLiteQuery, queryType: query.queryType })
                 .execute();
 
             return result;

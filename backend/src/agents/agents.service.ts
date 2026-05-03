@@ -104,6 +104,7 @@ export class AgentsService {
             Your job is to:
             1. Understand the task given
             2. Generate a well designed, optimized SQLite query based on the task
+            3. Classify the type of result the query will produce
 
             STRICT RULES:
             - Output must be strictly valid JSON only
@@ -116,20 +117,27 @@ export class AgentsService {
             - Use only SELECT statements (no INSERT, UPDATE, DELETE, DROP, ALTER, etc.)
             - Use only the provided table and column names (do not assume or invent any)
             - Queries must be concrete (no placeholders, variables, or pseudocode)
+            - Never use SELECT *
+
+            QUERY TYPE RULES:
+            - "value" → if result is a single aggregated value (COUNT, SUM, AVG, MIN, MAX)
+            - "chart" → if result involves GROUP BY, aggregation over categories/time
+            - "table" → if result is raw or filtered rows without aggregation
 
             INPUT TASK:
             {query}
 
             OUTPUT FORMAT:
             {{
-            "SQLiteQuery": "string"
+                "SQLiteQuery": "string",
+                "queryType": "table | chart | value"
             }}
 
             GUIDELINES:
-            - If a date column exists → include time-based tasks if required by the task
-            - If numeric columns exist → include aggregations (avg, sum, etc.) if required by the task
-            - If categorical columns exist → include grouping tasks if required by the task
-            - Never do Select * from table, always give relevant columns only
+            - If a date column exists → include time-based grouping if relevant
+            - If numeric columns exist → include aggregations if relevant
+            - If categorical columns exist → include grouping if relevant
+            - Always select only relevant columns
             - Be specific and practical
 
             Data:
@@ -170,7 +178,7 @@ export class AgentsService {
             .replace(/```json|```/g, '') // remove markdown if any
             .trim();
 
-        let parsed: { SQLiteQuery: string };
+        let parsed: { SQLiteQuery: string, queryType: string };
 
         try {
             parsed = JSON.parse(cleaned);
@@ -207,6 +215,7 @@ export class AgentsService {
 
         return {
             SQLiteQuery: query,
+            queryType: parsed.queryType
         };
     }
 }

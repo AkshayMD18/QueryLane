@@ -18,11 +18,15 @@ export const ViewTable: React.FC = () => {
         try {
             const generationResponse = await generateQuery(userQuery);
             const sqlQuery = generationResponse.SQLiteQuery;
+            const queryType = generationResponse.queryType;
 
             if (!sqlQuery) throw new Error("Failed to generate SQL query");
 
             const result = await executeAndStoreQuery({
-                query: sqlQuery,
+                query: {
+                    SQLiteQuery: sqlQuery,
+                    queryType: queryType,
+                },
                 tableName: tableName!
             });
 
