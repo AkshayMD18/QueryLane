@@ -38,7 +38,7 @@ export const ViewTable: React.FC = () => {
     };
 
     return (
-        <div className="p-8">
+        <div>
             <PageHeader
                 heading={tableName || ""}
                 description="View table data"

@@ -20,6 +20,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Badge } from "../ui/badge";
 
 const ValueCard = ({ data }: { data: QueryRow[] }) => {
     if (!data.length) return <div className="text-muted-foreground italic">No data available</div>;
@@ -133,15 +134,12 @@ export const QueryResults = ({ queries }: { queries: QueryResult[] }) => {
                                 <CardTitle className="text-lg font-bold truncate max-w-[80%]">
                                     {q.name || "Analysis Result"}
                                 </CardTitle>
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary capitalize">
+                                <Badge variant="secondary" className="capitalize font-bold">
                                     {q.queryType}
-                                </span>
+                                </Badge>
                             </div>
-                            <CardDescription className="font-mono text-[10px] truncate opacity-60">
-                                {q.id}
-                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="pt-6 flex-1">
+                        <CardContent className="flex-1">
                             {q.queryType === 'value' && <ValueCard data={q.data} />}
                             {q.queryType === 'chart' && <DynamicChart data={q.data} />}
                             {q.queryType === 'table' && <DynamicTable data={q.data} />}

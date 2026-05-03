@@ -118,13 +118,30 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
     }
-  body {
-    @apply bg-background text-foreground;
+    body {
+        @apply bg-background text-foreground;
     }
-  html {
-    @apply font-sans;
+    html {
+        @apply font-sans;
+    }
+
+    /* Custom Slim Scrollbar */
+    ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-border rounded-full;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-muted-foreground/30;
     }
 }

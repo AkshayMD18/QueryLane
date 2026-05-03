@@ -3,7 +3,6 @@ import { useFiles, useUploadFile } from "@/hook";
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -103,11 +102,10 @@ const HomePage: React.FC = () => {
                     ))}
                 </div>
             ) : files && files.length > 0 ? (
-                <div className="w-full overflow-x-auto">
-                    <Table className="w-full">
-                        <TableCaption>List of uploaded tables</TableCaption>
+                <div className="rounded-md border overflow-hidden">
+                    <Table>
                         <TableHeader>
-                            <TableRow>
+                            <TableRow className="bg-muted/50">
                                 <TableHead>Name</TableHead>
                                 <TableHead>Table Name</TableHead>
                                 <TableHead>Summary</TableHead>
@@ -115,10 +113,14 @@ const HomePage: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                             {files.map((file: file) => (
-                                <TableRow key={file.name} onClick={() => navigate(`/file/${file.tableName}`)}>
-                                    <TableCell>{file.name}</TableCell>
-                                    <TableCell>{file.tableName}</TableCell>
-                                    <TableCell>{file.summary}</TableCell>
+                                <TableRow
+                                    key={file.name}
+                                    className="cursor-pointer transition-colors hover:bg-muted/50"
+                                    onClick={() => navigate(`/file/${file.tableName}`)}
+                                >
+                                    <TableCell className="font-medium">{file.name}</TableCell>
+                                    <TableCell className="font-mono text-xs">{file.tableName}</TableCell>
+                                    <TableCell className="text-muted-foreground">{file.summary}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
