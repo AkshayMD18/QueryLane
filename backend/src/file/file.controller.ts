@@ -19,8 +19,9 @@ export class FileController {
   ) { }
 
   @Get('/')
-  async getFiles() {
-    return this.fileService.getAllFiles();
+  async getFiles(@Query() paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+    return this.fileService.getAllFiles(page, limit);
   }
 
   @Get('/columns/:name')

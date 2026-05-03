@@ -6,8 +6,8 @@ export const generateQuery = async (query: string) => {
     return response.data;
 };
 
-export const executeAndStoreQuery = async (query: queryResponse, tableName: string) => {
-    const response = await apiClient.post("/query", { query, tableName });
+export const executeAndStoreQuery = async (query: queryResponse, tableName: string, userQuery: string) => {
+    const response = await apiClient.post("/query", { query, tableName, userQuery });
     return response.data;
 };
 

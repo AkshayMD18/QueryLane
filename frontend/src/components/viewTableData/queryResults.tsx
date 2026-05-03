@@ -31,7 +31,7 @@ const ValueCard = ({ data }: { data: QueryRow[] }) => {
     const value = Object.values(firstRow)[0];
 
     return (
-        <div className="flex items-center justify-center py-6">
+        <div className="flex items-center justify-left">
             <p className="text-4xl font-bold tracking-tight text-primary">{value}</p>
         </div>
     );
@@ -133,11 +133,14 @@ export const QueryResults = ({ queries, onDelete }: { queries: QueryResult[], on
                 return (
                     <Card key={q.id} className="shadow-sm border-foreground/5 transition-all hover:shadow-md h-full flex flex-col relative group">
                         <CardHeader className="pb-3 border-b bg-muted/10">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-bold truncate max-w-[80%]">
-                                    {q.name || "Analysis Result"}
+                            <div className="flex items-center justify-between w-full overflow-hidden">
+                                <CardTitle 
+                                    className="text-lg font-bold truncate capitalize flex-1 mr-4" 
+                                    title={q.userQuery || q.name || "Analysis Result"}
+                                >
+                                    {q.userQuery || q.name || "Analysis Result"}
                                 </CardTitle>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                     <Badge variant="secondary" className="capitalize font-bold">
                                         {q.queryType}
                                     </Badge>
@@ -151,7 +154,7 @@ export const QueryResults = ({ queries, onDelete }: { queries: QueryResult[], on
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="pt-6 flex-1">
+                        <CardContent className="flex-1">
                             {q.queryType === 'value' && <ValueCard data={q.data} />}
                             {q.queryType === 'chart' && <DynamicChart data={q.data} />}
                             {q.queryType === 'table' && <DynamicTable data={q.data} />}

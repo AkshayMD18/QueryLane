@@ -1,98 +1,34 @@
 import React from "react";
 import { useFiles, useUploadFile } from "@/hook";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import type { file } from "@/type";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useQueryClient } from "@tanstack/react-query";
+import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
+import { UploadModal, FilesTable } from "@/components";
 
-const HomePage: React.FC = () => {
-    const { data: files, isLoading } = useFiles();
+const HomePage = () => {
+    const [page, setPage] = React.useState(0);
+    const limit = 20;
+
+    const { data: response, isLoading } = useFiles(page + 1, limit);
     const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
 
-    const [open, setOpen] = React.useState(false);
-    const [file, setFile] = React.useState<File | null>(null);
-    const [name, setName] = React.useState("");
-
-    const handleUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!file || !name) return;
-
-        try {
-            await uploadFile({ file, name });
-            queryClient.invalidateQueries({ queryKey: ["files"] });
-            setOpen(false);
-            setFile(null);
-            setName("");
-        } catch (error) {
-            // Error is handled in the hook's onError
-        }
+    const handleUpload = async (file: File, name: string) => {
+        await uploadFile({ file, name });
     };
 
+    const files = response?.data;
+    const total = response?.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
     return (
-        <div>
-            <PageHeader heading="Available Data" description="List of uploaded tables" actions={
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger render={<Button>Upload File</Button>} />
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Upload CSV File</DialogTitle>
-                            <DialogDescription>
-                                Upload a CSV file to analyze it and generate queries.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleUpload} className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Display Name</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="Enter a name for this data"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="file">CSV File</Label>
-                                <Input
-                                    id="file"
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                    required
-                                />
-                            </div>
-                            <DialogFooter className="pt-4">
-                                <Button type="submit" disabled={isUploading || !file || !name}>
-                                    {isUploading ? "Uploading..." : "Upload"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            } />
+        <div className="space-y-6">
+            <PageHeader
+                heading="Available Data"
+                description="List of uploaded tables"
+                actions={<UploadModal onUpload={handleUpload} isUploading={isUploading} />}
+            />
 
             {isLoading ? (
                 <div className="w-full space-y-4">
@@ -102,29 +38,16 @@ const HomePage: React.FC = () => {
                     ))}
                 </div>
             ) : files && files.length > 0 ? (
-                <div className="rounded-md border overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/50">
-                                <TableHead>Name</TableHead>
-                                <TableHead>Table Name</TableHead>
-                                <TableHead>Summary</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {files.map((file: file) => (
-                                <TableRow
-                                    key={file.name}
-                                    className="cursor-pointer transition-colors hover:bg-muted/50"
-                                    onClick={() => navigate(`/file/${file.tableName}`)}
-                                >
-                                    <TableCell className="font-medium">{file.name}</TableCell>
-                                    <TableCell className="font-mono text-xs">{file.tableName}</TableCell>
-                                    <TableCell className="text-muted-foreground">{file.summary}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                <div className="space-y-4">
+                    <FilesTable
+                        files={files || []}
+                        onRowClick={(tableName) => navigate(`/file/${tableName}`)}
+                    />
+                    <PaginationCustom
+                        page={page}
+                        totalPages={totalPages}
+                        setPage={setPage}
+                    />
                 </div>
             ) : (
                 <p className="text-muted-foreground">No tables available.</p>

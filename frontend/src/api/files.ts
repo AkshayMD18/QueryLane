@@ -1,7 +1,9 @@
 import apiClient from "@/api/config";
 
-export const getAllFiles = async () => {
-    const response = await apiClient.get("/files");
+export const getAllFiles = async (page?: number, limit?: number) => {
+    const response = await apiClient.get("/files", {
+        params: { page, limit }
+    });
     return response.data;
 }
 
@@ -10,8 +12,10 @@ export const getColumns = async (name: string) => {
     return response.data;
 }
 
-export const getTableData = async (name: string) => {
-    const response = await apiClient.get(`/files/${name}`);
+export const getTableData = async (name: string, page?: number, limit?: number) => {
+    const response = await apiClient.get(`/files/${name}`, {
+        params: { page, limit }
+    });
     return response.data;
 }
 

@@ -35,9 +35,20 @@ export class FileRepository {
     async getTableData(tableName: string, page: number, limit: number) {
         const validatedName = validateTableName(tableName);
         const offset = page * limit;
-        return this.dataSource.query(
+
+        const data = await this.dataSource.query(
             `SELECT * FROM "${validatedName}" LIMIT ${limit} OFFSET ${offset}`
         );
+
+        const countResult = await this.dataSource.query(
+            `SELECT COUNT(*) as count FROM "${validatedName}"`
+        );
+        const total = parseInt(countResult[0].count, 10);
+
+        return {
+            data,
+            total,
+        };
     }
 
     async createDynamicTable(tableName: string, columnDefs: string) {

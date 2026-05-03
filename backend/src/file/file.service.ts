@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { Files } from './file.entity';
 import { mapSqliteType } from 'src/helper';
 import { FileRepository } from './file.repository';
+import { getPagination } from 'src/utils/utils.pagination';
 
 @Injectable()
 export class FileService {
@@ -16,10 +17,21 @@ export class FileService {
     ) { }
 
 
-    async getAllFiles() {
-        return this.fileRepository.find({
-            select: ['name', 'tableName', 'summary'], // only these columns
+    async getAllFiles(page?: number, limit?: number) {
+        const { skip, take } = getPagination(page, limit);
+
+        const [data, total] = await this.fileRepository.findAndCount({
+            select: ['name', 'tableName', 'summary'],
+            skip,
+            take,
         });
+
+        return {
+            data,
+            total,
+            page: page || 1,
+            limit: take,
+        };
     }
 
     async getColumns(tableName: string) {
@@ -42,7 +54,17 @@ export class FileService {
             throw new BadRequestException('File not found');
         }
 
-        return this.fileRepo.getTableData(fileMetadata.tableName, page || 0, limit || 20);
+        const currentPage = page || 0;
+        const currentLimit = limit || 20;
+
+        const { data, total } = await this.fileRepo.getTableData(fileMetadata.tableName, currentPage, currentLimit);
+
+        return {
+            data,
+            total,
+            page: currentPage,
+            limit: currentLimit,
+        };
     }
 
     async getAgentTableData(tableName: string) {

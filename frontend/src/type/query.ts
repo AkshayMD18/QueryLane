@@ -7,6 +7,7 @@ export type QueryRow = Record<string, any>;
 
 export type QueryResult = {
     id: string;
+    userQuery?: string;
     name: string;
     queryType: 'table' | 'chart' | 'value';
     data: QueryRow[];

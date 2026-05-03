@@ -20,7 +20,7 @@ export function PageHeader({
 
                 {/* Left content */}
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-3xl font-bold tracking-tight capitalize">
                         {heading}
                     </h1>
 

@@ -1,10 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAllFiles, getColumns, getTableData, uploadFile } from "@/api";
 
-export const useFiles = () => {
+export const useFiles = (page?: number, limit?: number) => {
     return useQuery({
-        queryKey: ["files"],
-        queryFn: getAllFiles,
+        queryKey: ["files", page, limit],
+        queryFn: () => getAllFiles(page, limit),
     });
 }
 
@@ -15,19 +15,21 @@ export const useColumns = (name: string) => {
     });
 }
 
-export const useTableData = (name: string) => {
+export const useTableData = (name: string, page?: number, limit?: number) => {
     return useQuery({
-        queryKey: ["tableData", name],
-        queryFn: () => getTableData(name),
+        queryKey: ["tableData", name, page, limit],
+        queryFn: () => getTableData(name, page, limit),
     });
 }
 
 export const useUploadFile = () => {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ file, name }: { file: File; name: string }) =>
             uploadFile(file, name),
 
         onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["files"] });
             console.log('File uploaded successfully', data);
         },
 

@@ -140,6 +140,14 @@ export class AgentsService {
             - Always select only relevant columns
             - Be specific and practical
             - For chart always return 2 columns for x and y axis
+            - If queryType is "value":
+                - The result must represent a single value (one row, one column)
+                - The query should return exactly one column and one row
+                - Always use aggregation (e.g., COUNT, SUM, AVG, MIN, MAX) or a limiting clause (e.g., ORDER BY ... LIMIT 1) to ensure a single result
+                - The returned value must be treated as a string (even if it is numeric)
+                - Example cases:
+                    - "total number of users" → COUNT(...)
+                    - "highest grossing product name" → ORDER BY revenue DESC LIMIT 1
 
             Data:
             - Table Name: {tableName}
@@ -215,6 +223,7 @@ export class AgentsService {
         }
 
         return {
+            userQuery: data.query,
             SQLiteQuery: query,
             queryType: parsed.queryType
         };

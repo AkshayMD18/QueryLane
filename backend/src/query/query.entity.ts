@@ -9,6 +9,9 @@ export class Queries {
     tableName: string;
 
     @Column()
+    userQuery: string;
+
+    @Column()
     query: string;
 
     @Column()

@@ -1,7 +1,6 @@
-import React from "react";
 import { Link, Outlet } from "react-router-dom";
 
-export const Layout: React.FC = () => {
+export const Layout = () => {
     return (
         <div className="min-h-screen bg-background font-sans antialiased">
             {/* Simple Header */}

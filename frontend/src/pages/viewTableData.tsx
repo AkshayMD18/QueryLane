@@ -6,12 +6,21 @@ import { PageHeader } from "@/components/ui/pageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
 
-export const ViewTable: React.FC = () => {
+export const ViewTable = () => {
     const { tableName } = useParams();
-    const { data: tableData } = useTableData(tableName!);
+    const [page, setPage] = React.useState(0);
+    const limit = 20;
+
+    const { data: response } = useTableData(tableName!, page, limit);
     const { data: columns } = useColumns(tableName!);
     const { data: queries } = useGetAllQueriesForTable(tableName!);
+
+    const tableData = response?.data;
+    const total = response?.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
     const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
     const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
     const { mutateAsync: deleteQuery } = useDeleteQuery();
@@ -29,7 +38,8 @@ export const ViewTable: React.FC = () => {
                     SQLiteQuery: sqlQuery,
                     queryType: queryType,
                 },
-                tableName: tableName!
+                tableName: tableName!,
+                userQuery: userQuery
             });
 
             console.log("Query Results:", result);
@@ -59,11 +69,17 @@ export const ViewTable: React.FC = () => {
                         <TabsTrigger value="table">Table Data</TabsTrigger>
                         <TabsTrigger value="results">Query Results</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="table">
+                    <TabsContent value="table" className="space-y-4">
                         <DataTable
                             columns={columns}
                             tableData={tableData}
                             tableName={tableName}
+                        />
+
+                        <PaginationCustom
+                            page={page}
+                            totalPages={totalPages}
+                            setPage={setPage}
                         />
                     </TabsContent>
                     <TabsContent value="results">

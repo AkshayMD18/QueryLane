@@ -18,7 +18,7 @@ export const useGetAllQueriesForTable = (tableName: string) => {
 export const useExecuteAndStoreQuery = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ query, tableName }: { query: queryResponse, tableName: string }) => executeAndStoreQuery(query, tableName),
+        mutationFn: ({ query, tableName, userQuery }: { query: queryResponse, tableName: string, userQuery: string }) => executeAndStoreQuery(query, tableName, userQuery),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["queries"] });
         }

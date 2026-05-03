@@ -7,7 +7,7 @@ import type { QueryResponse } from 'src/types/types.query';
 export class QueryService {
 
     constructor(private readonly dataSource: DataSource) { }
-    async executeAndStoreQuery(query: QueryResponse, tableName: string) {
+    async executeAndStoreQuery(query: QueryResponse, tableName: string, userQuery: string) {
         try {
             const validatedQuery = validateSelectQuery(query.SQLiteQuery);
             const result = await this.dataSource.query(validatedQuery);
@@ -16,7 +16,7 @@ export class QueryService {
                 .createQueryBuilder()
                 .insert()
                 .into("queries")
-                .values({ tableName, query: query.SQLiteQuery, queryType: query.queryType })
+                .values({ tableName, query: query.SQLiteQuery, queryType: query.queryType, userQuery })
                 .execute();
 
             return result;
