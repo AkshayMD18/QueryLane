@@ -20,9 +20,10 @@ export class QueryController {
             queries.map(async (q: any) => {
                 const data = await this.queryService.executeQuery(q.query);
                 return {
+                    id: q.id,
                     query: q.query,
+                    queryType: q.queryType,
                     data: data
-
                 };
             })
         );

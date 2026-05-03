@@ -139,6 +139,7 @@ export class AgentsService {
             - If categorical columns exist → include grouping if relevant
             - Always select only relevant columns
             - Be specific and practical
+            - For chart always return 2 columns for x and y axis
 
             Data:
             - Table Name: {tableName}

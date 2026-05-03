@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery } from "@/hook";
+import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable } from "@/hook";
 import { DataTable, QueryModal, QueryResults } from "@/components";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ export const ViewTable: React.FC = () => {
     const { tableName } = useParams();
     const { data: tableData } = useTableData(tableName!);
     const { data: columns } = useColumns(tableName!);
+    const { data: queries } = useGetAllQueriesForTable(tableName!);
     const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
     const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
 
@@ -65,7 +66,7 @@ export const ViewTable: React.FC = () => {
                         />
                     </TabsContent>
                     <TabsContent value="results">
-                        <QueryResults />
+                        <QueryResults queries={queries} />
                     </TabsContent>
                 </Tabs>
             ) : (
