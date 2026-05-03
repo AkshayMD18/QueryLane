@@ -22,8 +22,8 @@ export class FileService {
         });
     }
 
-    async getColumns(name: string) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { name } });
+    async getColumns(tableName: string) {
+        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
         if (!fileMetadata) {
             throw new BadRequestException('File not found');
         }
@@ -36,8 +36,8 @@ export class FileService {
         }));
     }
 
-    async getTableData(name: string, page?: number, limit?: number) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { name } });
+    async getTableData(tableName: string, page?: number, limit?: number) {
+        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
         if (!fileMetadata) {
             throw new BadRequestException('File not found');
         }
@@ -45,8 +45,8 @@ export class FileService {
         return this.fileRepo.getTableData(fileMetadata.tableName, page || 0, limit || 20);
     }
 
-    async getAgentTableData(name: string) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { name } });
+    async getAgentTableData(tableName: string) {
+        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
         if (!fileMetadata) {
             throw new BadRequestException('File not found');
         }

@@ -9,8 +9,6 @@ import type { tableData } from 'src/types';
 export class AgentsService {
     constructor(private readonly llmService: LlmserviceService) { }
 
-
-
     async generateAnalysisTasks(data: tableData) {
         const promptTemplate = ChatPromptTemplate.fromTemplate(`
             You are a data analysis planning agent.
@@ -112,6 +110,7 @@ export class AgentsService {
             - Do not include any text, explanation, or formatting outside the JSON
             - Do not use markdown or comments
             - The SQLite query must be a single-line string with no newline, tab, or escape characters
+            - The SQLite query must NOT end with a semicolon (;)
             - Do not format or pretty-print the SQLite query
             - Generate only valid and executable SQLite queries
             - Use only SELECT statements (no INSERT, UPDATE, DELETE, DROP, ALTER, etc.)
@@ -123,13 +122,14 @@ export class AgentsService {
 
             OUTPUT FORMAT:
             {{
-                "SQLiteQuery": "string"
+            "SQLiteQuery": "string"
             }}
 
             GUIDELINES:
             - If a date column exists → include time-based tasks if required by the task
             - If numeric columns exist → include aggregations (avg, sum, etc.) if required by the task
             - If categorical columns exist → include grouping tasks if required by the task
+            - Never do Select * from table, always give relevant columns only
             - Be specific and practical
 
             Data:
@@ -143,7 +143,6 @@ export class AgentsService {
             .map(([col, type]) => `${col} (${type})`)
             .join(', ');
 
-        // ✅ Create Runnable here
         const llm = new RunnableLambda({
             func: async (input: any) => {
                 const prompt =
@@ -162,14 +161,52 @@ export class AgentsService {
             tableName: data.tableName,
             rowCount: data.rowCount,
             schema: schemaStr,
-            sampleData: JSON.stringify(data.sampleData, null, 2),
+            sampleData: JSON.stringify(data.sampleData),
         });
 
+        // 🔥 STEP 1: Clean raw output (LLMs are messy)
+        const cleaned = raw
+            .trim()
+            .replace(/```json|```/g, '') // remove markdown if any
+            .trim();
+
+        let parsed: { SQLiteQuery: string };
+
         try {
-            return JSON.parse(raw);
+            parsed = JSON.parse(cleaned);
         } catch (e) {
             console.error("Invalid JSON from LLM:", raw);
             throw new Error("Failed to parse LLM response");
         }
+
+        // 🔥 STEP 2: Normalize query
+        let query = parsed.SQLiteQuery.trim();
+
+        // remove trailing semicolons
+        query = query.replace(/;+$/, '');
+
+        // remove newlines / tabs (just in case)
+        query = query.replace(/\s+/g, ' ');
+
+        // 🔥 STEP 3: Validate query (CRITICAL)
+        const lower = query.toLowerCase();
+
+        if (!lower.startsWith('select')) {
+            throw new Error('Only SELECT queries are allowed');
+        }
+
+        if (query.includes(';')) {
+            throw new Error('Multiple statements are not allowed');
+        }
+
+        // basic forbidden keywords check
+        const forbidden = ['insert', 'update', 'delete', 'drop', 'alter', 'truncate'];
+        if (forbidden.some((word) => lower.includes(word))) {
+            throw new Error('Forbidden SQL operation detected');
+        }
+
+        return {
+            SQLiteQuery: query,
+        };
     }
 }

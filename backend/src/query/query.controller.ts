@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { QueryService } from './query.service';
 
 @Controller('query')
@@ -12,7 +12,7 @@ export class QueryController {
     }
 
     @Get()
-    async getAllQueriesForTable(@Body('tableName') tableName: string) {
+    async getAllQueriesForTable(@Query('tableName') tableName: string) {
         const queries = await this.queryService.getAllQueriesForTable(tableName);
 
         const results = await Promise.all(

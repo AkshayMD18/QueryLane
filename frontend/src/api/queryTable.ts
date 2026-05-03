@@ -9,3 +9,8 @@ export const executeAndStoreQuery = async (query: string, tableName: string) => 
     const response = await apiClient.post("/query", { query, tableName });
     return response.data;
 };
+
+// export const getAllQueriesForTable = async (tableName: string) => {
+//     const response = await apiClient.get(`/query`, {tableName});
+//     return response.data;
+// };
