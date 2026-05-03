@@ -11,51 +11,45 @@ export class AgentsService {
 
     async generateAnalysisTasks(data: tableData) {
         const promptTemplate = ChatPromptTemplate.fromTemplate(`
-            You are a data analysis planning agent.
+            You are a data analysis recommendation agent.
 
             Your job is to:
             1. Understand the dataset
-            2. Generate a list of SPECIFIC and ACTIONABLE analysis tasks
-            3. Ensure every task produces results that can be visualized on a graph (X–Y axis)
+            2. Generate a list of useful and practical analysis that can be performed on the dataset 
 
             STRICT RULES:
-            - Output MUST be valid JSON
-            - DO NOT include any text before or after JSON
-            - DO NOT use markdown
-            - Tasks must be concrete (e.g., "Calculate total sales per month")
-            - Use ONLY the column names provided
-            - Each task must include the required columns
-            - Avoid tasks that cannot be visualized (e.g., single scalar outputs like total count)
+            - Output MUST be a JSON array of strings
+            - The object MUST contain only one key: "recommendation"
+            - The value of "recommendation" MUST be an array of strings
+            - Each item must be a plain string
+            - DO NOT use markdown or comments
+            - Each item must contain ONLY:
+            - "recommendation": a clear explanation of what the query does
+            - It must be single-line strings (no newlines, tabs, or formatting)
+            - Use ONLY the provided table and column names
+            - DO NOT give me a raw SQL query
 
             OUTPUT FORMAT:
             {{
-                "summary": "Brief description of the dataset",
-                "columns": ["column1", "column2", "column3", ...],
-                "tasks": [
-                    {{
-                        "taskName": "string",
-                        "columns": ["column1", "column2"],
-                        "xAxis": "column_name",
-                        "yAxis": "column_name_or_aggregation"
-                    }}
+                "recommendation": [
+                    "string",
+                    "string",
+                    "string"
                 ]
             }}
 
             GUIDELINES:
-            - Every task must map clearly to a graph:
-                - X-axis → categorical or time-based column
-                - Y-axis → numeric value or aggregation (SUM, AVG, COUNT, etc.)
-            Prefer these types of analyses:
-                - Aggregations (avg, sum, count) grouped by a category
-                - Time-series trends (if date column exists)
-                - Comparisons across categories
-                - Relationships between two numeric columns (scatter plots)
-            - If a date column exists → prioritize time-based graphs
-            - If numeric columns exist → use aggregations for Y-axis
-            - If categorical columns exist → use them for X-axis grouping
-            - Do NOT generate vague tasks like "analyze trends"
-            - Be specific and practical
-            - Limit the number of tasks to 5
+            - Generate a mix of:
+            - Aggregations (SUM, AVG, COUNT, etc.)
+            - Grouped analysis (GROUP BY)
+            - Time-based trends (if date column exists)
+            - Top/bottom records (ORDER BY ... LIMIT)
+            - Include both:
+            - Multi-row queries (for tables/charts)
+            - Single-value queries (aggregations)
+            - Ensure each query is meaningful and useful for analysis
+            - Avoid vague descriptions like "analyze data"
+            - Limit the number of queries to 3
 
             Data:
             - Table Name: {tableName}

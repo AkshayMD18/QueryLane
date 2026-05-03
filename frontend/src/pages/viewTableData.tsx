@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable, useDeleteQuery } from "@/hook";
+import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable, useDeleteQuery, useGenerateTasks } from "@/hook";
 import { DataTable, QueryModal, QueryResults } from "@/components";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,14 @@ export const ViewTable = () => {
     const { data: response } = useTableData(tableName!, page, limit);
     const { data: columns } = useColumns(tableName!);
     const { data: queries } = useGetAllQueriesForTable(tableName!);
+    const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
+    const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
+    const { mutateAsync: deleteQuery } = useDeleteQuery();
+    const { mutateAsync: generateTasks, isPending: isGeneratingTasks } = useGenerateTasks();
 
     const tableData = response?.data;
     const total = response?.total || 0;
     const totalPages = Math.ceil(total / limit);
-
-    const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
-    const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
-    const { mutateAsync: deleteQuery } = useDeleteQuery();
 
     const handleQueryExecute = async (userQuery: string) => {
         try {
@@ -48,6 +48,15 @@ export const ViewTable = () => {
         }
     };
 
+    const handleGenerateTasks = async () => {
+        try {
+            const { data: tasks } = await generateTasks(tableName!);
+            console.log(tasks);
+        } catch (error) {
+            console.error("Tasks Generation failed:", error);
+        }
+    };
+
     return (
         <div>
             <PageHeader
@@ -57,8 +66,9 @@ export const ViewTable = () => {
                     <QueryModal
                         trigger={<Button>Query</Button>}
                         onExecute={handleQueryExecute}
-                        isLoading={isGeneratingQuery || isExecutingQuery}
-
+                        onGenerateTasks={handleGenerateTasks}
+                        isQueryLoading={isGeneratingQuery || isExecutingQuery}
+                        isGeneratingTasks={isGeneratingTasks}
                     />
                 }
             />

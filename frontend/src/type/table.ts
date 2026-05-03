@@ -7,5 +7,9 @@ export interface DataTableProps {
 export interface QueryModalProps {
     trigger?: React.ReactElement
     onExecute?: (query: string) => void
-    isLoading?: boolean;
+    onGenerateTasks?: () => void
+    isQueryLoading?: boolean;
+    isGeneratingTasks?: boolean;
+    tasks?: { recommendation: string[] } | any[];
+
 }

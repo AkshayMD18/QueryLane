@@ -1,12 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { generateQuery, executeAndStoreQuery, getAllQueriesForTable, deleteQuery } from "@/api";
+import { executeAndStoreQuery, getAllQueriesForTable, deleteQuery } from "@/api";
 import type { queryResponse } from "src/type";
-
-export const useGenerateQuery = () => {
-    return useMutation({
-        mutationFn: (query: string) => generateQuery(query),
-    });
-}
 
 export const useGetAllQueriesForTable = (tableName: string) => {
     return useQuery({
