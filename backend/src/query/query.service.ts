@@ -48,4 +48,17 @@ export class QueryService {
             throw error;
         }
     }
+
+    async deleteQuery(id: number) {
+        try {
+            await this.dataSource
+                .createQueryBuilder()
+                .delete()
+                .from("queries")
+                .where("id = :id", { id })
+                .execute();
+        } catch (error) {
+            throw error;
+        }
+    }
 }

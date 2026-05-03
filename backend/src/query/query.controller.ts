@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
 import { QueryService } from './query.service';
 import type { QueryResponse } from 'src/types/types.query';
 
@@ -29,5 +29,11 @@ export class QueryController {
         );
 
         return results;
+    }
+
+    @Delete()
+    async deleteQuery(@Query('id') id: number) {
+        const result = await this.queryService.deleteQuery(id);
+        return result;
     }
 } 

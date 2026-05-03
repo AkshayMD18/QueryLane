@@ -15,3 +15,8 @@ export const getAllQueriesForTable = async (tableName: string) => {
     const response = await apiClient.get(`/query`, { params: { tableName } });
     return response.data;
 };
+
+export const deleteQuery = async (id: number) => {
+    const response = await apiClient.delete(`/query`, { params: { id } });
+    return response.data;
+};

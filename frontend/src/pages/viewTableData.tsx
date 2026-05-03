@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable } from "@/hook";
+import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable, useDeleteQuery } from "@/hook";
 import { DataTable, QueryModal, QueryResults } from "@/components";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export const ViewTable: React.FC = () => {
     const { data: queries } = useGetAllQueriesForTable(tableName!);
     const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
     const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
+    const { mutateAsync: deleteQuery } = useDeleteQuery();
 
     const handleQueryExecute = async (userQuery: string) => {
         try {
@@ -66,7 +67,10 @@ export const ViewTable: React.FC = () => {
                         />
                     </TabsContent>
                     <TabsContent value="results">
-                        <QueryResults queries={queries} />
+                        <QueryResults
+                            queries={queries}
+                            onDelete={(id) => deleteQuery(id)}
+                        />
                     </TabsContent>
                 </Tabs>
             ) : (

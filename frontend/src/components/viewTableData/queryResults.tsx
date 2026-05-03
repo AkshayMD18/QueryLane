@@ -6,7 +6,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { QueryRow, QueryResult } from "@/type/query";
 import {
     Bar,
@@ -21,6 +21,8 @@ import {
     ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Badge } from "../ui/badge";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const ValueCard = ({ data }: { data: QueryRow[] }) => {
     if (!data.length) return <div className="text-muted-foreground italic">No data available</div>;
@@ -110,10 +112,11 @@ const DynamicChart = ({ data }: { data: QueryRow[] }) => {
     );
 };
 
-export const QueryResults = ({ queries }: { queries: QueryResult[] }) => {
+
+export const QueryResults = ({ queries, onDelete }: { queries: QueryResult[], onDelete: (id: number) => void }) => {
     if (!queries || queries.length === 0) {
         return (
-            <Card className="border-dashed">
+            <Card className="border-dashed col-span-full">
                 <CardContent className="py-10 flex flex-col items-center justify-center text-muted-foreground">
                     <p>No queries found for this table.</p>
                     <p className="text-xs">Use the query agent to generate and execute an analysis task.</p>
@@ -128,18 +131,27 @@ export const QueryResults = ({ queries }: { queries: QueryResult[] }) => {
                 if (!q.data) return null;
 
                 return (
-                    <Card key={q.id} className="shadow-sm border-foreground/5 transition-all hover:shadow-md h-full flex flex-col">
+                    <Card key={q.id} className="shadow-sm border-foreground/5 transition-all hover:shadow-md h-full flex flex-col relative group">
                         <CardHeader className="pb-3 border-b bg-muted/10">
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-lg font-bold truncate max-w-[80%]">
                                     {q.name || "Analysis Result"}
                                 </CardTitle>
-                                <Badge variant="secondary" className="capitalize font-bold">
-                                    {q.queryType}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="capitalize font-bold">
+                                        {q.queryType}
+                                    </Badge>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        onClick={() => onDelete(Number(q.id))}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex-1">
+                        <CardContent className="pt-6 flex-1">
                             {q.queryType === 'value' && <ValueCard data={q.data} />}
                             {q.queryType === 'chart' && <DynamicChart data={q.data} />}
                             {q.queryType === 'table' && <DynamicTable data={q.data} />}
