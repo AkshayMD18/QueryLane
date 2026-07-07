@@ -18,7 +18,13 @@ export class QueryController {
 
         const results = await Promise.all(
             queries.map(async (q: any) => {
-                const data = await this.queryService.executeQuery(q.query);
+                const queryResponse: QueryResponse = {
+                    SQLiteQuery: q.query,
+                    tableName: q.tableName,
+                    columns: q.columns || [],
+                    queryType: q.queryType,
+                };
+                const data = await this.queryService.executeQuery(queryResponse);
                 return {
                     id: q.id,
                     userQuery: q.userQuery,

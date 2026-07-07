@@ -17,6 +17,8 @@ export type AnalysisTasks = z.infer<typeof analysisTasksSchema>;
 
 export const generateQuerySchema = z.object({
     SQLiteQuery: z.string(),
+    tableName: z.string(),
+    columns: z.array(z.string()),
     queryType: z.enum(['table', 'chart', 'value']),
 });
 

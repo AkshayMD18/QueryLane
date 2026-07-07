@@ -9,14 +9,14 @@ export class QueryService {
     constructor(private readonly dataSource: DataSource) { }
     async executeAndStoreQuery(query: QueryResponse, tableName: string, userQuery: string) {
         try {
-            const validatedQuery = validateSelectQuery(query.SQLiteQuery);
+            const validatedQuery = validateSelectQuery(query.SQLiteQuery, query.tableName, query.columns);
             const result = await this.dataSource.query(validatedQuery);
 
             await this.dataSource
                 .createQueryBuilder()
                 .insert()
                 .into("queries")
-                .values({ tableName, query: query.SQLiteQuery, queryType: query.queryType, userQuery })
+                .values({ tableName, query: query.SQLiteQuery, queryType: query.queryType, userQuery, columns: query.columns })
                 .execute();
 
             return result;
@@ -25,9 +25,9 @@ export class QueryService {
         }
     }
 
-    async executeQuery(query: string) {
+    async executeQuery(query: QueryResponse) {
         try {
-            const validatedQuery = validateSelectQuery(query);
+            const validatedQuery = validateSelectQuery(query.SQLiteQuery, query.tableName, query.columns);
             const result = await this.dataSource.query(validatedQuery);
             return result;
         } catch (error) {

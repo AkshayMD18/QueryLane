@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { LlmserviceService } from '../llmservice/llmservice.service';
 import { tableData, analysisTasksSchema, generateQuerySchema } from 'src/types';
-import { validateSelectQuery, sanitizeQuery } from '../helper/helper.validateSelectQuery';
+import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
 
 
 @Injectable()
@@ -82,7 +82,9 @@ export class AgentsService {
                 Your job is to:
                 1. Understand the task given
                 2. Generate a well designed, optimized SQLite query based on the task
-                3. Classify the type of result the query will produce
+                3. Extract the table name used in the query
+                4. Extract all columns from the dataset that are referenced in the query
+                5. Classify the type of result the query will produce
 
                 STRICT RULES:
                 - Output must be strictly valid JSON only
@@ -105,6 +107,8 @@ export class AgentsService {
                 OUTPUT FORMAT:
                 {{
                     "SQLiteQuery": "string",
+                    "tableName": "string",
+                    "columns": ["string", "string"],
                     "queryType": "table | chart | value"
                 }}
 
@@ -150,8 +154,7 @@ export class AgentsService {
             sampleData: JSON.stringify(data.sampleData),
         });
 
-        const query = sanitizeQuery(parsed.SQLiteQuery);
-        validateSelectQuery(query);
+        const query = validateSelectQuery(parsed.SQLiteQuery, parsed.tableName, parsed.columns);
 
         return {
             userQuery: data.query,

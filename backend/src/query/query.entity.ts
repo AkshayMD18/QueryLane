@@ -14,6 +14,9 @@ export class Queries {
     @Column()
     query: string;
 
+    @Column('simple-json', { nullable: true })
+    columns: string[];
+
     @Column()
     queryType: string;
 }
