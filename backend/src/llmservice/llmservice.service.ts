@@ -7,7 +7,7 @@ export class LlmserviceService {
 
     constructor() {
         this.model = new ChatOpenRouter(
-            "openai/gpt-oss-20b:free",
+            "tencent/hy3:free",
             {
                 apiKey: process.env.OPENROUTER_API_KEY,
                 temperature: 0.8,
@@ -21,6 +21,10 @@ export class LlmserviceService {
             { role: 'user', content: prompt }
         ]);
         return response.content as string;
+    }
+
+    getModel() {
+        return this.model;
     }
 }
 

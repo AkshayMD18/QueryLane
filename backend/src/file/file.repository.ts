@@ -8,17 +8,15 @@ export class FileRepository {
 
     async fetchTableDetails(tableName: string) {
         const validatedName = validateTableName(tableName);
-        // 1. Get Columns (Must stay raw for SQLite metadata)
+
         const rawColumns = await this.dataSource.query(
             `PRAGMA table_info("${validatedName}")`
         );
 
-        // 2. Get Sample Data (Top 3)
         const sampleData = await this.dataSource.query(
-            `SELECT * FROM "${validatedName}" LIMIT 3`
+            `SELECT * FROM "${validatedName}" LIMIT 2`
         );
 
-        // 3. Get Row Count using a raw query (getCount() requires an Entity)
         const countResult = await this.dataSource.query(
             `SELECT COUNT(*) as count FROM "${validatedName}"`
         );
