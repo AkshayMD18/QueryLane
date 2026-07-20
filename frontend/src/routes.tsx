@@ -3,6 +3,7 @@ import type { RouteObject } from "react-router-dom";
 import HomePage from "./pages/homePage";
 import { ViewTable } from "./pages/viewTableData";
 import { Layout } from "./components/layout";
+import GroupPage from "./pages/groupPage";
 
 const routes: RouteObject[] = [
     {
@@ -12,6 +13,10 @@ const routes: RouteObject[] = [
             {
                 index: true,
                 element: <HomePage />,
+            },
+            {
+                path: "group/:groupId",
+                element: <GroupPage />,
             },
             {
                 path: "file/:tableName",

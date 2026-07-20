@@ -13,4 +13,7 @@ export class Files {
 
     @Column({ nullable: false })
     summary: string;
+
+    @Column({ nullable: false })
+    groupId: number;
 }

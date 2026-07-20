@@ -11,6 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from './file.service';
 import { AgentsService } from 'src/agents/agents.service';
 import { PaginationDto } from 'src/dto/dto.pagination';
+import { UploadFileDto } from './dto/upload-file.dto';
 
 @Controller('files')
 export class FileController {
@@ -20,8 +21,8 @@ export class FileController {
 
   @Get('/')
   async getFiles(@Query() paginationDto: PaginationDto) {
-    const { page, limit } = paginationDto;
-    return this.fileService.getAllFiles(page, limit);
+    const { page, limit, groupId } = paginationDto;
+    return this.fileService.getAllFiles(page, limit, groupId);
   }
 
   @Get('/columns/:name')
@@ -42,8 +43,8 @@ export class FileController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @Query('name') name: string,
+    @Query() uploadFileDto: UploadFileDto,
   ) {
-    return await this.fileService.parseAndSaveFile(file, name);
+    return await this.fileService.parseAndSaveFile(file, uploadFileDto.name, uploadFileDto.groupId);
   }
 }

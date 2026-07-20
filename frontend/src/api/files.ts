@@ -1,8 +1,8 @@
 import apiClient from "@/api/config";
 
-export const getAllFiles = async (page?: number, limit?: number) => {
+export const getAllFiles = async (page?: number, limit?: number, groupId?: number) => {
     const response = await apiClient.get("/files", {
-        params: { page, limit }
+        params: { page, limit, groupId }
     });
     return response.data;
 }
@@ -19,12 +19,12 @@ export const getTableData = async (name: string, page?: number, limit?: number) 
     return response.data;
 }
 
-export const uploadFile = async (file: File, name: string) => {
+export const uploadFile = async (file: File, name: string, groupId: number) => {
     const formData = new FormData();
     formData.append('file', file);
 
     const response = await apiClient.post(`/files`, formData, {
-        params: { name }, // goes as query param
+        params: { name, groupId }, // goes as query param
         headers: {
             'Content-Type': 'multipart/form-data',
         },

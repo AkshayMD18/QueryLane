@@ -3,10 +3,11 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Files } from './file.entity';
+import { Files } from './entities/file.entity';
 import { mapSqliteType } from 'src/helper';
 import { FileRepository } from './file.repository';
 import { getPagination } from 'src/utils/utils.pagination';
+import { GroupsService } from '../groups/groups.service';
 
 @Injectable()
 export class FileService {
@@ -14,14 +15,21 @@ export class FileService {
         @InjectRepository(Files)
         private fileRepository: Repository<Files>,
         private fileRepo: FileRepository,
+        private groupsService: GroupsService,
     ) { }
 
 
-    async getAllFiles(page?: number, limit?: number) {
+    async getAllFiles(page?: number, limit?: number, groupId?: number) {
         const { skip, take } = getPagination(page, limit);
 
+        const where: any = {};
+        if (groupId) {
+            where.groupId = groupId;
+        }
+
         const [data, total] = await this.fileRepository.findAndCount({
-            select: ['name', 'tableName', 'summary'],
+            select: ['name', 'tableName', 'summary', 'groupId'],
+            where,
             skip,
             take,
         });
@@ -93,7 +101,8 @@ export class FileService {
 
     async parseAndSaveFile(
         file: Express.Multer.File,
-        name: string
+        name: string,
+        groupId: number
     ): Promise<{
         columns: string[];
         columnTypes: Record<string, string>;
@@ -103,6 +112,11 @@ export class FileService {
         const existingFile = await this.fileRepository.findOne({ where: { name } });
         if (existingFile) {
             throw new BadRequestException('File with this name already exists');
+        }
+
+        const existingGroup = await this.groupsService.getGroupById(groupId);
+        if (!existingGroup) {
+            throw new BadRequestException('Group not found');
         }
 
         return new Promise((resolve, reject) => {
@@ -146,6 +160,7 @@ export class FileService {
                             name,
                             tableName,
                             summary: `Contains ${results.length} rows and ${columns.length} columns.`,
+                            groupId: groupId
                         });
 
                         await this.fileRepository.save(newFile);

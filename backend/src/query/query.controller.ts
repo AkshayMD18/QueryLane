@@ -1,19 +1,24 @@
 import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
 import { QueryService } from './query.service';
 import type { QueryResponse } from 'src/types/types.query';
+import { ExecuteQueryDto } from './dto/execute-query.dto';
+import { GetQueriesDto } from './dto/get-queries.dto';
+import { DeleteQueryDto } from './dto/delete-query.dto';
 
 @Controller('query')
 export class QueryController {
     constructor(private readonly queryService: QueryService) { }
 
     @Post()
-    async executeQuery(@Body('query') query: QueryResponse, @Body('tableName') tableName: string, @Body('userQuery') userQuery: string) {
+    async executeQuery(@Body() executeQueryDto: ExecuteQueryDto) {
+        const { query, tableName, userQuery } = executeQueryDto;
         const result = await this.queryService.executeAndStoreQuery(query, tableName, userQuery);
         return result;
     }
 
     @Get()
-    async getAllQueriesForTable(@Query('tableName') tableName: string) {
+    async getAllQueriesForTable(@Query() getQueriesDto: GetQueriesDto) {
+        const { tableName } = getQueriesDto;
         const queries = await this.queryService.getAllQueriesForTable(tableName);
 
         const results = await Promise.all(
@@ -39,7 +44,8 @@ export class QueryController {
     }
 
     @Delete()
-    async deleteQuery(@Query('id') id: number) {
+    async deleteQuery(@Query() deleteQueryDto: DeleteQueryDto) {
+        const { id } = deleteQueryDto;
         const result = await this.queryService.deleteQuery(id);
         return result;
     }
