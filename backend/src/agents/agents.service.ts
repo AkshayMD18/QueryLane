@@ -83,7 +83,7 @@ export class AgentsService {
                 1. Understand the task given
                 2. Generate a well designed, optimized SQLite query based on the task
                 3. Extract the table name used in the query
-                4. Extract all columns from the dataset that are referenced in the query
+                4. Extract all columns from the dataset that are referenced anywhere in the query (including in SELECT, WHERE, JOIN, ORDER BY, GROUP BY, and HAVING clauses)
                 5. Classify the type of result the query will produce
 
                 STRICT RULES:
@@ -98,6 +98,7 @@ export class AgentsService {
                 - Use only the provided table and column names (do not assume or invent any)
                 - Queries must be concrete (no placeholders, variables, or pseudocode)
                 - Never use SELECT *
+                - The "columns" array MUST contain EVERY column referenced anywhere in the SQLiteQuery (e.g., columns used in WHERE, ORDER BY, GROUP BY, etc., must be included, not just those in the SELECT clause)
 
                 QUERY TYPE RULES:
                 - "value" → if result is a single aggregated value (COUNT, SUM, AVG, MIN, MAX)
@@ -153,6 +154,8 @@ export class AgentsService {
             schema: schemaStr,
             sampleData: JSON.stringify(data.sampleData),
         });
+
+        console.log(parsed);
 
         const query = validateSelectQuery(parsed.SQLiteQuery, parsed.tableName, parsed.columns);
 
