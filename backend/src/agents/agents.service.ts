@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { LlmserviceService } from '../llmservice/llmservice.service';
-import { tableData, analysisTasksSchema, generateQuerySchema } from 'src/types';
+import { tableData, tablesData, analysisTasksSchema, generateQuerySchema } from 'src/types';
 import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
-
-
+import { getForeignKeys } from '../utils/utils.getForigenKeys';
+import { DataSource } from 'typeorm';
 @Injectable()
 export class AgentsService {
-    constructor(private readonly llmService: LlmserviceService) { }
+    constructor(private readonly llmService: LlmserviceService,
+        private readonly dataSource: DataSource
+    ) { }
 
     async generateAnalysisTasks(data: tableData) {
         const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -164,5 +166,91 @@ export class AgentsService {
             SQLiteQuery: query,
             queryType: parsed.queryType
         };
+    }
+
+    async generateQueryForMultipleTables(data: tablesData) {
+        const promptTemplate = ChatPromptTemplate.fromMessages([
+            ["system",
+                `You are a SQLite query generation agent.
+
+                Your job is to:
+                1. Understand the user's request
+                2. Analyze all available tables and relationships
+                3. Generate an optimized SQLite SELECT query
+                4. Identify all tables referenced in the query
+                5. Identify all columns referenced anywhere in the query
+                6. Classify the query result type
+
+                DATABASE CONTEXT:
+                - Multiple tables may exist
+                - Tables may be connected through foreign keys
+                - Foreign key relationships are provided separately
+                - Use JOINs whenever data spans multiple related tables
+
+                STRICT RULES:
+                - Output must be strictly valid JSON only
+                - Do not include explanations
+                - Do not include markdown
+                - Do not include comments
+                - SQLiteQuery must be a single-line string
+                - SQLiteQuery must not contain newline characters
+                - SQLiteQuery must not end with ';'
+                - Use only SELECT statements
+                - Never generate INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, PRAGMA
+                - Never use SELECT *
+                - Use only tables and columns that exist in the provided dataset
+                - Never invent tables or columns
+                - Use foreign key relationships when joining tables
+
+                COLUMN EXTRACTION RULE:
+                The columns array MUST contain EVERY column referenced anywhere in the query including:
+                - SELECT
+                - JOIN
+                - ON
+                - WHERE
+                - GROUP BY
+                - ORDER BY
+                - HAVING
+
+                QUERY TYPE RULES:
+                - "value" = exactly one value returned
+                - "chart" = grouped or aggregated result suitable for visualization
+                - "table" = raw records or filtered records
+
+                VALUE RULES:
+                - Query must return exactly one row and one column
+                - Use aggregation or LIMIT 1
+                - Result should be directly displayable as a single value
+
+                CHART RULES:
+                - Query should return exactly 2 columns
+                - First column = label/category/time
+                - Second column = aggregated numeric value
+
+                TABLE RULES:
+                - Return meaningful records
+                - Select only relevant columns
+
+                OUTPUT FORMAT:
+                {
+                "SQLiteQuery": "string",
+                "tables": ["table1", "table2"],
+                "columns": ["column1", "column2"],
+                "queryType": "table | chart | value"
+                }`
+            ],
+            ["human",
+                `Task:
+                {query}
+
+                Database Metadata:
+                {databaseMetadata}`
+            ]
+        ]);
+        const tables = data.tableData.map((table) => table.tableName);
+        const db = (this.dataSource.driver as any).databaseConnection;
+        const keys = await getForeignKeys(db, tables);
+
+        console.log(keys)
     }
 }

@@ -9,6 +9,11 @@ export type tableData = {
     query?: string,
 }
 
+export type tablesData = {
+    tableData: tableData[]
+    query?: string,
+}
+
 export const analysisTasksSchema = z.object({
     recommendation: z.array(z.string()),
 });

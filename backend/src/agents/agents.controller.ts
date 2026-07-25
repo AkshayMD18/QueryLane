@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { AgentsService } from './agents.service';
 import { FileService } from 'src/file/file.service';
+import type { tablesData } from 'src/types';
 
 @Controller('agents')
 export class AgentsController {
@@ -19,5 +20,10 @@ export class AgentsController {
     async query(@Body('tableName') tableName: string, @Body('query') query: string) {
         const data = await this.fileService.getAgentTableData(tableName);
         return this.agentsService.generateQuery({ ...data, query });
+    }
+
+    @Post('join-query')
+    async joinQuery(@Body('data') data: tablesData, @Body('query') query: string) {
+        return this.agentsService.generateQueryForMultipleTables({ ...data, query });
     }
 }
