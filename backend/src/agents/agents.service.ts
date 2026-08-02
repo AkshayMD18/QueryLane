@@ -5,6 +5,7 @@ import { tableData, tablesData, analysisTasksSchema, generateQuerySchema } from 
 import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
 import { getForeignKeys } from '../utils/utils.getForigenKeys';
 import { DataSource } from 'typeorm';
+import { getCleanJsonSchema } from 'src/utils/utils.getZotToSchema';
 @Injectable()
 export class AgentsService {
     constructor(private readonly llmService: LlmserviceService,
@@ -64,7 +65,7 @@ export class AgentsService {
             .map(([col, type]) => `${col} (${type})`)
             .join(', ');
 
-        const analysisOutput = this.llmService.getModel().withStructuredOutput(analysisTasksSchema);
+        const analysisOutput = this.llmService.getModel().withStructuredOutput(analysisTasksSchema as any, { method: 'jsonMode' });
 
         const chain = promptTemplate.pipe(analysisOutput);
 
@@ -145,7 +146,7 @@ export class AgentsService {
             .map(([col, type]) => `${col} (${type})`)
             .join(', ');
 
-        const queryOutput = this.llmService.getModel().withStructuredOutput(generateQuerySchema);
+        const queryOutput = this.llmService.getModel().withStructuredOutput(generateQuerySchema as any, { method: 'jsonMode' });
 
         const chain = promptTemplate.pipe(queryOutput);
 
