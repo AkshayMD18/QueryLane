@@ -1,14 +1,20 @@
-import { generateQuery, generateTasks } from "@/api";
+import { generateQuery, generateTasks, generateJoinQuery } from "@/api";
 import { useMutation } from "@tanstack/react-query";
 
 export const useGenerateQuery = () => {
     return useMutation({
-        mutationFn: (query: string) => generateQuery(query),
+        mutationFn: ({ query, tableName }: { query: string, tableName: string }) => generateQuery(query, tableName),
     });
 }
 
 export const useGenerateTasks = () => {
     return useMutation({
         mutationFn: (tableName: string) => generateTasks(tableName),
+    });
+}
+
+export const useGenerateJoinQuery = () => {
+    return useMutation({
+        mutationFn: ({ groupId, query }: { groupId: number, query: string }) => generateJoinQuery(groupId, query),
     });
 }

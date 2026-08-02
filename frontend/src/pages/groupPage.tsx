@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGroupById, useFiles, useUploadFile } from "@/hook";
+import { useGroupById, useFiles, useUploadFile, useGenerateJoinQuery } from "@/hook";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
@@ -16,14 +16,14 @@ export const GroupPage = () => {
     const { data: group, isLoading: isGroupLoading } = useGroupById(Number(groupId));
     const { data: response, isLoading: isFilesLoading } = useFiles(page + 1, limit, Number(groupId));
     const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
+    const { mutateAsync: generateJoinQuery } = useGenerateJoinQuery();
 
     const handleUpload = async (file: File, name: string) => {
         await uploadFile({ file, name, groupId: Number(groupId) });
     };
 
     const handleQueryExecute = async (userQuery: string) => {
-        console.log("Execute group query:", userQuery);
-        // Note: Backend logic for multi-table group queries to be added later
+        await generateJoinQuery({ query: userQuery, groupId: Number(groupId) });
     };
 
     const handleGenerateTasks = async () => {

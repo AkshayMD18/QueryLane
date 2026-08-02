@@ -8,6 +8,7 @@ import { mapSqliteType } from 'src/helper';
 import { FileRepository } from './file.repository';
 import { getPagination } from 'src/utils/utils.pagination';
 import { GroupsService } from '../groups/groups.service';
+import { tableData } from 'src/types/types.agents';
 
 @Injectable()
 export class FileService {
@@ -98,6 +99,33 @@ export class FileService {
         };
     }
 
+    async getAgentGroupData(groupId: number) {
+        const files = await this.fileRepository.find({ where: { groupId } });
+        if (!files || files.length === 0) {
+            throw new BadRequestException('No files found for this group');
+        }
+
+        const tablesData: Array<tableData> = [];
+        for (const file of files) {
+            const { rawColumns, sampleData, rowCount } = await this.fileRepo.fetchTableDetails(file.tableName);
+
+            const columns = rawColumns.map((col: any) => col.name);
+            const columnTypes: Record<string, string> = {};
+            rawColumns.forEach((col: any) => {
+                columnTypes[col.name] = mapSqliteType(col.type);
+            });
+
+            tablesData.push({
+                tableName: file.tableName,
+                columns,
+                columnTypes,
+                sampleData,
+                rowCount,
+            });
+        }
+
+        return tablesData;
+    }
 
     async parseAndSaveFile(
         file: Express.Multer.File,

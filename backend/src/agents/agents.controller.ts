@@ -23,7 +23,8 @@ export class AgentsController {
     }
 
     @Post('join-query')
-    async joinQuery(@Body('data') data: tablesData, @Body('query') query: string) {
-        return this.agentsService.generateQueryForMultipleTables({ ...data, query });
+    async joinQuery(@Body('groupId') groupId: string, @Body('query') query: string) {
+        const tablesData = await this.fileService.getAgentGroupData(Number(groupId));
+        return this.agentsService.generateQueryForMultipleTables({ tableData: tablesData, query: query });
     }
 }

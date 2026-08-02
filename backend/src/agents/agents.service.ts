@@ -158,8 +158,6 @@ export class AgentsService {
             sampleData: JSON.stringify(data.sampleData),
         });
 
-        console.log(parsed);
-
         const query = validateSelectQuery(parsed.SQLiteQuery, parsed.tableName, parsed.columns);
 
         return {
@@ -243,7 +241,6 @@ export class AgentsService {
             ["human",
                 `Task:
                 {query}
-
                 Database Metadata:
                 {databaseMetadata}`
             ]
@@ -252,6 +249,6 @@ export class AgentsService {
         const db = (this.dataSource.driver as any).databaseConnection;
         const keys = await getForeignKeys(db, tables);
 
-        console.log(keys)
+        console.log(keys, data.query)
     }
 }

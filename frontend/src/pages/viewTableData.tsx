@@ -27,7 +27,7 @@ export const ViewTable = () => {
 
     const handleQueryExecute = async (userQuery: string) => {
         try {
-            const generationResponse = await generateQuery(userQuery);
+            const generationResponse = await generateQuery({ query: userQuery, tableName: tableName! });
             const sqlQuery = generationResponse.SQLiteQuery;
             const queryType = generationResponse.queryType;
 
