@@ -3,24 +3,23 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Files } from './entities/file.entity';
+import { TableEntity } from './entities/table.entity';
 import { mapSqliteType } from 'src/helper';
-import { FileRepository } from './file.repository';
+import { TableRepository } from './table.repository';
 import { getPagination } from 'src/utils/utils.pagination';
 import { GroupsService } from '../groups/groups.service';
 import { tableData } from 'src/types/types.agents';
 
 @Injectable()
-export class FileService {
+export class TableService {
     constructor(
-        @InjectRepository(Files)
-        private fileRepository: Repository<Files>,
-        private fileRepo: FileRepository,
+        @InjectRepository(TableEntity)
+        private tableRepository: Repository<TableEntity>,
+        private tableRepo: TableRepository,
         private groupsService: GroupsService,
     ) { }
 
-
-    async getAllFiles(page?: number, limit?: number, groupId?: number) {
+    async getAllTables(page?: number, limit?: number, groupId?: number) {
         const { skip, take } = getPagination(page, limit);
 
         const where: any = {};
@@ -28,8 +27,8 @@ export class FileService {
             where.groupId = groupId;
         }
 
-        const [data, total] = await this.fileRepository.findAndCount({
-            select: ['name', 'tableName', 'summary', 'groupId'],
+        const [data, total] = await this.tableRepository.findAndCount({
+            select: ['id', 'name', 'tableName', 'summary', 'groupId'],
             where,
             skip,
             take,
@@ -43,13 +42,17 @@ export class FileService {
         };
     }
 
+    async getTableById(id: number) {
+        return this.tableRepository.findOne({ where: { id } });
+    }
+
     async getColumns(tableName: string) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
-        if (!fileMetadata) {
-            throw new BadRequestException('File not found');
+        const tableMetadata = await this.tableRepository.findOne({ where: { tableName } });
+        if (!tableMetadata) {
+            throw new BadRequestException('Table not found');
         }
 
-        const { rawColumns } = await this.fileRepo.fetchTableDetails(fileMetadata.tableName);
+        const { rawColumns } = await this.tableRepo.fetchTableDetails(tableMetadata.tableName);
 
         return rawColumns.map((col: any) => ({
             name: col.name,
@@ -58,15 +61,15 @@ export class FileService {
     }
 
     async getTableData(tableName: string, page?: number, limit?: number) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
-        if (!fileMetadata) {
-            throw new BadRequestException('File not found');
+        const tableMetadata = await this.tableRepository.findOne({ where: { tableName } });
+        if (!tableMetadata) {
+            throw new BadRequestException('Table not found');
         }
 
         const currentPage = page || 0;
         const currentLimit = limit || 20;
 
-        const { data, total } = await this.fileRepo.getTableData(fileMetadata.tableName, currentPage, currentLimit);
+        const { data, total } = await this.tableRepo.getTableData(tableMetadata.tableName, currentPage, currentLimit);
 
         return {
             data,
@@ -77,12 +80,12 @@ export class FileService {
     }
 
     async getAgentTableData(tableName: string) {
-        const fileMetadata = await this.fileRepository.findOne({ where: { tableName } });
-        if (!fileMetadata) {
-            throw new BadRequestException('File not found');
+        const tableMetadata = await this.tableRepository.findOne({ where: { tableName } });
+        if (!tableMetadata) {
+            throw new BadRequestException('Table not found');
         }
 
-        const { rawColumns, sampleData, rowCount } = await this.fileRepo.fetchTableDetails(fileMetadata.tableName);
+        const { rawColumns, sampleData, rowCount } = await this.tableRepo.fetchTableDetails(tableMetadata.tableName);
 
         const columns = rawColumns.map((col: any) => col.name);
         const columnTypes: Record<string, string> = {};
@@ -91,7 +94,7 @@ export class FileService {
         });
 
         return {
-            tableName: fileMetadata.tableName,
+            tableName: tableMetadata.tableName,
             columns,
             columnTypes,
             sampleData,
@@ -100,14 +103,14 @@ export class FileService {
     }
 
     async getAgentGroupData(groupId: number) {
-        const files = await this.fileRepository.find({ where: { groupId } });
-        if (!files || files.length === 0) {
-            throw new BadRequestException('No files found for this group');
+        const tables = await this.tableRepository.find({ where: { groupId } });
+        if (!tables || tables.length === 0) {
+            throw new BadRequestException('No tables found for this group');
         }
 
         const tablesData: Array<tableData> = [];
-        for (const file of files) {
-            const { rawColumns, sampleData, rowCount } = await this.fileRepo.fetchTableDetails(file.tableName);
+        for (const table of tables) {
+            const { rawColumns, sampleData, rowCount } = await this.tableRepo.fetchTableDetails(table.tableName);
 
             const columns = rawColumns.map((col: any) => col.name);
             const columnTypes: Record<string, string> = {};
@@ -116,7 +119,7 @@ export class FileService {
             });
 
             tablesData.push({
-                tableName: file.tableName,
+                tableName: table.tableName,
                 columns,
                 columnTypes,
                 sampleData,
@@ -137,9 +140,9 @@ export class FileService {
         rowCount: number;
         sampleData: any[];
     }> {
-        const existingFile = await this.fileRepository.findOne({ where: { name } });
-        if (existingFile) {
-            throw new BadRequestException('File with this name already exists');
+        const existingTable = await this.tableRepository.findOne({ where: { name } });
+        if (existingTable) {
+            throw new BadRequestException('Table with this name already exists');
         }
 
         const existingGroup = await this.groupsService.getGroupById(groupId);
@@ -167,7 +170,7 @@ export class FileService {
                     const columns = Object.keys(results[0]);
                     const columnTypes: Record<string, string> = {};
 
-                    // 🔍 Infer types
+                    // Infer types
                     columns.forEach((col) => {
                         const types = results
                             .slice(0, 10)
@@ -184,14 +187,14 @@ export class FileService {
 
                         await this.insertDataBatch(tableName, results);
 
-                        const newFile = this.fileRepository.create({
+                        const newTable = this.tableRepository.create({
                             name,
                             tableName,
                             summary: `Contains ${results.length} rows and ${columns.length} columns.`,
                             groupId: groupId
                         });
 
-                        await this.fileRepository.save(newFile);
+                        await this.tableRepository.save(newTable);
 
                         resolve({
                             columns,
@@ -224,7 +227,7 @@ export class FileService {
             })
             .join(', ');
 
-        await this.fileRepo.createDynamicTable(tableName, columnDefs);
+        await this.tableRepo.createDynamicTable(tableName, columnDefs);
     }
 
     private async insertDataBatch(tableName: string, data: any[]) {
@@ -234,7 +237,7 @@ export class FileService {
         const colNames = columns.map((c) => `"${c}"`).join(', ');
         const placeholders = `(${columns.map(() => '?').join(', ')})`;
 
-        const batchSize = 500; // avoid SQLite limits
+        const batchSize = 500;
 
         for (let i = 0; i < data.length; i += batchSize) {
             const batch = data.slice(i, i + batchSize);
@@ -247,7 +250,7 @@ export class FileService {
                 })
                 .join(', ');
 
-            await this.fileRepo.insertDataBatch(tableName, colNames, rowsSql, values);
+            await this.tableRepo.insertDataBatch(tableName, colNames, rowsSql, values);
         }
     }
 
@@ -272,5 +275,3 @@ export class FileService {
         );
     }
 }
-
-

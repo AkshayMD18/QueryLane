@@ -1,7 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
 import { Parser } from "node-sql-parser";
 
-export function validateSelectQuery(query: string, tableName: string, columns: string[]): string {
+export function validateSelectQuery(query: string, tableName: string, columns?: string[]): string {
     if (!query || typeof query !== "string") {
         throw new BadRequestException("Query must be a valid string");
     }

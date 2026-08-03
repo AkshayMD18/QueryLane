@@ -27,4 +27,16 @@ export const generateQuerySchema = z.object({
     queryType: z.enum(['table', 'chart', 'value']),
 });
 
+export const generateJoinQuerySchema = z.object({
+    SQLiteQuery: z.string(),
+    tables: z.array(
+        z.object({
+            tableName: z.string(),
+            columns: z.array(z.string()),
+        })
+    ),
+    queryType: z.enum(['table', 'chart', 'value']),
+});
+
 export type GenerateQuery = z.infer<typeof generateQuerySchema>;
+export type GenerateJoinQuery = z.infer<typeof generateJoinQuerySchema>;

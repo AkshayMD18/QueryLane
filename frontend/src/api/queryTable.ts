@@ -1,13 +1,13 @@
 import apiClient from "./config";
 import type { queryResponse } from "src/type";
 
-export const executeAndStoreQuery = async (query: queryResponse, tableName: string, userQuery: string) => {
-    const response = await apiClient.post("/query", { query, tableName, userQuery });
+export const executeAndStoreQuery = async (query: queryResponse, tableId: number, userQuery: string) => {
+    const response = await apiClient.post("/query", { query, tableId, userQuery });
     return response.data;
 };
 
-export const getAllQueriesForTable = async (tableName: string) => {
-    const response = await apiClient.get(`/query`, { params: { tableName } });
+export const getAllQueriesForTable = async (tableId: number) => {
+    const response = await apiClient.get(`/query`, { params: { tableId } });
     return response.data;
 };
 

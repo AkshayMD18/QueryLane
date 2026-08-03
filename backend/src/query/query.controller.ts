@@ -1,32 +1,40 @@
-import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query, BadRequestException } from '@nestjs/common';
 import { QueryService } from './query.service';
 import type { QueryResponse } from 'src/types/types.query';
 import { ExecuteQueryDto } from './dto/execute-query.dto';
 import { GetQueriesDto } from './dto/get-queries.dto';
 import { DeleteQueryDto } from './dto/delete-query.dto';
+import { TableService } from '../table/table.service';
 
 @Controller('query')
 export class QueryController {
-    constructor(private readonly queryService: QueryService) { }
+    constructor(
+        private readonly queryService: QueryService,
+        private readonly tableService: TableService,
+    ) { }
 
     @Post()
     async executeQuery(@Body() executeQueryDto: ExecuteQueryDto) {
-        const { query, tableName, userQuery } = executeQueryDto;
-        const result = await this.queryService.executeAndStoreQuery(query, tableName, userQuery);
+        const { query, tableId, userQuery } = executeQueryDto;
+        const result = await this.queryService.executeAndStoreQuery(query, tableId, userQuery);
         return result;
     }
 
     @Get()
     async getAllQueriesForTable(@Query() getQueriesDto: GetQueriesDto) {
-        const { tableName } = getQueriesDto;
-        const queries = await this.queryService.getAllQueriesForTable(tableName);
+        const { tableId } = getQueriesDto;
+        const table = await this.tableService.getTableById(tableId);
+        if (!table) {
+            throw new BadRequestException('Table not found');
+        }
+
+        const queries = await this.queryService.getAllQueriesForTable(tableId);
 
         const results = await Promise.all(
             queries.map(async (q: any) => {
                 const queryResponse: QueryResponse = {
                     SQLiteQuery: q.query,
-                    tableName: q.tableName,
-                    columns: q.columns || [],
+                    tableName: table.tableName,
                     queryType: q.queryType,
                 };
                 const data = await this.queryService.executeQuery(queryResponse);

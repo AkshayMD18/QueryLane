@@ -6,10 +6,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import type { file } from "@/type";
+import type { table } from "@/type";
 
 
-export const FilesTable = ({ files, onRowClick }: { files: file[], onRowClick: (tableName: string) => void }) => {
+export const TablesTable = ({ tables, onRowClick }: { tables: table[], onRowClick: (id: number, tableName: string) => void }) => {
     return (
         <div className="rounded-md border overflow-hidden">
             <Table>
@@ -21,15 +21,15 @@ export const FilesTable = ({ files, onRowClick }: { files: file[], onRowClick: (
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {files.map((file) => (
+                    {tables.map((tbl) => (
                         <TableRow
-                            key={file.name}
+                            key={tbl.name}
                             className="cursor-pointer transition-colors hover:bg-muted/50"
-                            onClick={() => onRowClick(file.tableName)}
+                            onClick={() => onRowClick(tbl.id, tbl.tableName)}
                         >
-                            <TableCell className="font-medium">{file.name}</TableCell>
-                            <TableCell className="font-mono text-xs">{file.tableName}</TableCell>
-                            <TableCell className="text-muted-foreground">{file.summary}</TableCell>
+                            <TableCell className="font-medium">{tbl.name}</TableCell>
+                            <TableCell className="font-mono text-xs">{tbl.tableName}</TableCell>
+                            <TableCell className="text-muted-foreground">{tbl.summary}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

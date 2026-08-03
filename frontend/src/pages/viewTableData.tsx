@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useTableData, useColumns, useGenerateQuery, useExecuteAndStoreQuery, useGetAllQueriesForTable, useDeleteQuery, useGenerateTasks } from "@/hook";
 import { DataTable, QueryModal, QueryResults } from "@/components";
 import { PageHeader } from "@/components/ui/pageHeader";
@@ -10,12 +10,14 @@ import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
 
 export const ViewTable = () => {
     const { tableName } = useParams();
+    const [searchParams] = useSearchParams();
+    const tableId = Number(searchParams.get("id"));
     const [page, setPage] = React.useState(0);
     const limit = 20;
 
     const { data: response } = useTableData(tableName!, page, limit);
     const { data: columns } = useColumns(tableName!);
-    const { data: queries } = useGetAllQueriesForTable(tableName!);
+    const { data: queries } = useGetAllQueriesForTable(tableId);
     const { mutateAsync: generateQuery, isPending: isGeneratingQuery } = useGenerateQuery();
     const { mutateAsync: executeAndStoreQuery, isPending: isExecutingQuery } = useExecuteAndStoreQuery();
     const { mutateAsync: deleteQuery } = useDeleteQuery();
@@ -38,7 +40,7 @@ export const ViewTable = () => {
                     SQLiteQuery: sqlQuery,
                     queryType: queryType,
                 },
-                tableName: tableName!,
+                tableId: tableId,
                 userQuery: userQuery
             });
 

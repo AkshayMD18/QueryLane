@@ -6,7 +6,7 @@ export class Queries {
     id: number;
 
     @Column()
-    tableName: string;
+    tableId: number;
 
     @Column()
     userQuery: string;
@@ -14,8 +14,23 @@ export class Queries {
     @Column()
     query: string;
 
-    @Column('simple-json', { nullable: true })
-    columns: string[];
+    @Column()
+    queryType: string;
+}
+
+@Entity('group_queries')
+export class GroupQuery {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    groupId: number;
+
+    @Column()
+    userQuery: string;
+
+    @Column()
+    query: string;
 
     @Column()
     queryType: string;

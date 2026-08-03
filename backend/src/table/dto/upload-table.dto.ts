@@ -1,6 +1,6 @@
-import { IsNotEmpty, IsString, IsInt, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
 
-export class UploadFileDto {
+export class UploadTableDto {
     @IsNotEmpty()
     @IsString()
     name: string;

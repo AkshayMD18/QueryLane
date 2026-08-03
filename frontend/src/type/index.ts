@@ -1,3 +1,3 @@
-export * from "./files";
+export * from "./tables";
 export * from "./table";
 export * from "./query";

@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { LlmserviceService } from '../llmservice/llmservice.service';
-import { tableData, tablesData, analysisTasksSchema, generateQuerySchema } from 'src/types';
+import { tableData, tablesData, analysisTasksSchema, generateQuerySchema, generateJoinQuerySchema } from 'src/types';
 import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
 import { getForeignKeys } from '../utils/utils.getForigenKeys';
 import { DataSource } from 'typeorm';
-import { getCleanJsonSchema } from 'src/utils/utils.getZotToSchema';
 @Injectable()
 export class AgentsService {
     constructor(private readonly llmService: LlmserviceService,
@@ -65,7 +64,7 @@ export class AgentsService {
             .map(([col, type]) => `${col} (${type})`)
             .join(', ');
 
-        const analysisOutput = this.llmService.getModel().withStructuredOutput(analysisTasksSchema as any, { method: 'jsonMode' });
+        const analysisOutput = this.llmService.getModel().withStructuredOutput(analysisTasksSchema, { method: 'jsonMode' });
 
         const chain = promptTemplate.pipe(analysisOutput);
 
@@ -146,7 +145,7 @@ export class AgentsService {
             .map(([col, type]) => `${col} (${type})`)
             .join(', ');
 
-        const queryOutput = this.llmService.getModel().withStructuredOutput(generateQuerySchema as any, { method: 'jsonMode' });
+        const queryOutput = this.llmService.getModel().withStructuredOutput(generateQuerySchema, { method: 'jsonMode' });
 
         const chain = promptTemplate.pipe(queryOutput);
 
@@ -232,10 +231,14 @@ export class AgentsService {
 
                 OUTPUT FORMAT:
                 {
-                "SQLiteQuery": "string",
-                "tables": ["table1", "table2"],
-                "columns": ["column1", "column2"],
-                "queryType": "table | chart | value"
+                    "SQLiteQuery": "string",
+                    "tables": [
+                        {
+                            "tableName": "string",
+                            "columns": ["string", "string"]
+                        }
+                    ],
+                    "queryType": "table | chart | value"
                 }`
             ],
             ["human",
@@ -249,6 +252,34 @@ export class AgentsService {
         const db = (this.dataSource.driver as any).databaseConnection;
         const keys = await getForeignKeys(db, tables);
 
-        console.log(keys, data.query)
+        const schemaStr = data.tableData
+            .map(
+                (table) =>
+                    `${table.tableName}: ${Object.entries(table.columnTypes)
+                        .map(([col, type]) => `${col} (${type})`)
+                        .join(', ')}`
+            )
+            .join('\n');
+
+        const queryOutput = this.llmService.getModel().withStructuredOutput(generateJoinQuerySchema, { method: 'jsonMode' });
+        const chain = promptTemplate.pipe(queryOutput);
+        const parsed = await chain.invoke({
+            query: data.query,
+            databaseMetadata: `
+            ${data.tableData.map((table) =>
+                `Table: ${table.tableName}\n` +
+                `Total Rows: ${table.rowCount}\n` +
+                `Columns and Types: ${schemaStr}` +
+                `Sample Data: ${JSON.stringify(table.sampleData)}`
+            ).join('\n\n')}
+            Foreign Keys:\n` + JSON.stringify(keys, null, 2)
+        });
+
+        return {
+            userQuery: data.query,
+            SQLiteQuery: parsed.SQLiteQuery,
+            tables: parsed.tables,
+            queryType: parsed.queryType
+        };
     }
 }

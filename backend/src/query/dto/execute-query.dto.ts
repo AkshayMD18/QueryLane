@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryResponseDto {
@@ -9,10 +9,6 @@ export class QueryResponseDto {
     @IsNotEmpty()
     @IsString()
     tableName: string;
-
-    @IsArray()
-    @IsString({ each: true })
-    columns: string[];
 
     @IsNotEmpty()
     @IsEnum(['table', 'chart', 'value'])
@@ -26,8 +22,8 @@ export class ExecuteQueryDto {
     query: QueryResponseDto;
 
     @IsNotEmpty()
-    @IsString()
-    tableName: string;
+    @IsNumber()
+    tableId: number;
 
     @IsNotEmpty()
     @IsString()

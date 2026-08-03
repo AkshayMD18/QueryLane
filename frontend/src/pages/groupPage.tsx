@@ -1,10 +1,10 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGroupById, useFiles, useUploadFile, useGenerateJoinQuery } from "@/hook";
+import { useGroupById, useTables, useUploadTable, useGenerateJoinQuery } from "@/hook";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
-import { UploadModal, FilesTable, QueryModal } from "@/components";
+import { UploadModal, TablesTable, QueryModal } from "@/components";
 import { Button } from "@/components/ui/button";
 
 export const GroupPage = () => {
@@ -14,12 +14,12 @@ export const GroupPage = () => {
     const limit = 20;
 
     const { data: group, isLoading: isGroupLoading } = useGroupById(Number(groupId));
-    const { data: response, isLoading: isFilesLoading } = useFiles(page + 1, limit, Number(groupId));
-    const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
+    const { data: response, isLoading: isTablesLoading } = useTables(page + 1, limit, Number(groupId));
+    const { mutateAsync: uploadTable, isPending: isUploading } = useUploadTable();
     const { mutateAsync: generateJoinQuery } = useGenerateJoinQuery();
 
     const handleUpload = async (file: File, name: string) => {
-        await uploadFile({ file, name, groupId: Number(groupId) });
+        await uploadTable({ file, name, groupId: Number(groupId) });
     };
 
     const handleQueryExecute = async (userQuery: string) => {
@@ -30,7 +30,7 @@ export const GroupPage = () => {
         console.log("Generate group tasks");
     };
 
-    const files = response?.data;
+    const tables = response?.data;
     const total = response?.total || 0;
     const totalPages = Math.ceil(total / limit);
 
@@ -64,17 +64,17 @@ export const GroupPage = () => {
                 }
             />
 
-            {isFilesLoading ? (
+            {isTablesLoading ? (
                 <div className="w-full space-y-4">
                     {Array.from({ length: 5 }).map((_, i) => (
                         <Skeleton key={i} className="h-12 w-full" />
                     ))}
                 </div>
-            ) : files && files.length > 0 ? (
+            ) : tables && tables.length > 0 ? (
                 <div className="space-y-4">
-                    <FilesTable
-                        files={files || []}
-                        onRowClick={(tableName) => navigate(`/file/${tableName}`)}
+                    <TablesTable
+                        tables={tables || []}
+                        onRowClick={(id, tableName) => navigate(`/file/${tableName}?id=${id}`)}
                     />
                     <PaginationCustom
                         page={page}

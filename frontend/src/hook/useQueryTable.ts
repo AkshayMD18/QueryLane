@@ -2,17 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { executeAndStoreQuery, getAllQueriesForTable, deleteQuery } from "@/api";
 import type { queryResponse } from "src/type";
 
-export const useGetAllQueriesForTable = (tableName: string) => {
+export const useGetAllQueriesForTable = (tableId: number) => {
     return useQuery({
-        queryKey: ['queries', tableName],
-        queryFn: () => getAllQueriesForTable(tableName),
+        queryKey: ['queries', tableId],
+        queryFn: () => getAllQueriesForTable(tableId),
+        enabled: !isNaN(tableId),
     });
 }
 
 export const useExecuteAndStoreQuery = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ query, tableName, userQuery }: { query: queryResponse, tableName: string, userQuery: string }) => executeAndStoreQuery(query, tableName, userQuery),
+        mutationFn: ({ query, tableId, userQuery }: { query: queryResponse, tableId: number, userQuery: string }) => executeAndStoreQuery(query, tableId, userQuery),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["queries"] });
         }

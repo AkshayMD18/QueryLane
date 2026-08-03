@@ -1,10 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllFiles, getColumns, getTableData, uploadFile } from "@/api";
+import { getAllTables, getTableById, getColumns, getTableData, uploadTable } from "@/api";
 
-export const useFiles = (page?: number, limit?: number, groupId?: number) => {
+export const useTables = (page?: number, limit?: number, groupId?: number) => {
     return useQuery({
-        queryKey: ["files", page, limit, groupId],
-        queryFn: () => getAllFiles(page, limit, groupId),
+        queryKey: ["tables", page, limit, groupId],
+        queryFn: () => getAllTables(page, limit, groupId),
+    });
+}
+
+export const useTableMetadata = (id: number) => {
+    return useQuery({
+        queryKey: ["tableMetadata", id],
+        queryFn: () => getTableById(id),
+        enabled: !isNaN(id),
     });
 }
 
@@ -22,19 +30,19 @@ export const useTableData = (name: string, page?: number, limit?: number) => {
     });
 }
 
-export const useUploadFile = () => {
+export const useUploadTable = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ file, name, groupId }: { file: File; name: string; groupId: number }) =>
-            uploadFile(file, name, groupId),
+            uploadTable(file, name, groupId),
 
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["files"] });
-            console.log('File uploaded successfully', data);
+            queryClient.invalidateQueries({ queryKey: ["tables"] });
+            console.log('Table uploaded successfully', data);
         },
 
         onError: (error: any) => {
-            console.error('File upload failed', error);
+            console.error('Table upload failed', error);
         },
     });
 };

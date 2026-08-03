@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { validateTableName } from 'src/helper';
 
 @Injectable()
-export class FileRepository {
+export class TableRepository {
     constructor(private readonly dataSource: DataSource) { }
 
     async fetchTableDetails(tableName: string) {
