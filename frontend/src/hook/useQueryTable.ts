@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { executeAndStoreQuery, getAllQueriesForTable, deleteQuery } from "@/api";
+import { executeAndStoreQuery, getAllQueriesForTable, deleteQuery, executeAndStoreGroupQuery, getAllQueriesForGroup, deleteGroupQuery } from "@/api";
 import type { queryResponse } from "src/type";
 
 export const useGetAllQueriesForTable = (tableId: number) => {
@@ -29,3 +29,32 @@ export const useDeleteQuery = () => {
         }
     });
 }
+
+export const useGetAllQueriesForGroup = (groupId: number) => {
+    return useQuery({
+        queryKey: ['group-queries', groupId],
+        queryFn: () => getAllQueriesForGroup(groupId),
+        enabled: !isNaN(groupId),
+    });
+}
+
+export const useExecuteAndStoreGroupQuery = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ query, groupId, userQuery }: { query: queryResponse, groupId: number, userQuery: string }) => executeAndStoreGroupQuery(query, groupId, userQuery),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["group-queries"] });
+        }
+    });
+}
+
+export const useDeleteGroupQuery = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => deleteGroupQuery(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["group-queries"] });
+        }
+    });
+}
+

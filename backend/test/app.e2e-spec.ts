@@ -127,6 +127,35 @@ describe('App (e2e)', () => {
       .query({ id: queryId })
       .expect(200);
 
+    // 7.1 Execute and store group query
+    const executeGroupQueryPayload = {
+      query: {
+        SQLiteQuery: `SELECT * FROM ${tableName}`,
+        tableName: tableName,
+        queryType: 'table',
+      },
+      groupId,
+      userQuery: 'show all group data',
+    };
+    const groupQueryPostRes = await request(app.getHttpServer())
+      .post('/query/group')
+      .send(executeGroupQueryPayload);
+    expect(groupQueryPostRes.status).toBe(201);
+
+    // 7.2 Fetch group queries
+    const getGroupQueriesResponse = await request(app.getHttpServer())
+      .get('/query/group')
+      .query({ groupId })
+      .expect(200);
+    expect(getGroupQueriesResponse.body.length).toBeGreaterThan(0);
+    const groupQueryId = getGroupQueriesResponse.body[0].id;
+
+    // 7.3 Delete group query
+    await request(app.getHttpServer())
+      .delete('/query/group')
+      .query({ id: groupQueryId })
+      .expect(200);
+
     // 8. Delete group cascadingly
     await request(app.getHttpServer())
       .delete(`/groups/${groupId}`)

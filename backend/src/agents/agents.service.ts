@@ -230,16 +230,16 @@ export class AgentsService {
                 - Select only relevant columns
 
                 OUTPUT FORMAT:
-                {
+                {{
                     "SQLiteQuery": "string",
                     "tables": [
-                        {
+                        {{
                             "tableName": "string",
                             "columns": ["string", "string"]
-                        }
+                        }}
                     ],
                     "queryType": "table | chart | value"
-                }`
+                }}`
             ],
             ["human",
                 `Task:

@@ -15,3 +15,19 @@ export const deleteQuery = async (id: number) => {
     const response = await apiClient.delete(`/query`, { params: { id } });
     return response.data;
 };
+
+export const executeAndStoreGroupQuery = async (query: queryResponse, groupId: number, userQuery: string) => {
+    const response = await apiClient.post("/query/group", { query, groupId, userQuery });
+    return response.data;
+};
+
+export const getAllQueriesForGroup = async (groupId: number) => {
+    const response = await apiClient.get(`/query/group`, { params: { groupId } });
+    return response.data;
+};
+
+export const deleteGroupQuery = async (id: number) => {
+    const response = await apiClient.delete(`/query/group`, { params: { id } });
+    return response.data;
+};
+
