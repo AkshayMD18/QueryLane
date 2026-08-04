@@ -45,4 +45,55 @@ export class GroupsService {
       throw error;
     }
   }
+
+  async deleteGroup(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Get all tables in the group
+      const tables = await queryRunner.manager.query(
+        `SELECT id, tableName FROM tables WHERE groupId = ?`,
+        [id]
+      );
+
+      // 2. Loop through each table and delete its associated data
+      for (const table of tables) {
+        // Drop the actual SQLite table
+        await queryRunner.manager.query(`DROP TABLE IF EXISTS ${table.tableName}`);
+
+        // Delete all queries associated with this table
+        await queryRunner.manager.query(
+          `DELETE FROM queries WHERE tableId = ?`,
+          [table.id]
+        );
+
+        // Delete the table metadata record
+        await queryRunner.manager.query(
+          `DELETE FROM tables WHERE id = ?`,
+          [table.id]
+        );
+      }
+
+      // 3. Delete group queries
+      await queryRunner.manager.query(
+        `DELETE FROM group_queries WHERE groupId = ?`,
+        [id]
+      );
+
+      // 4. Delete the group itself
+      await queryRunner.manager.query(
+        `DELETE FROM groups WHERE id = ?`,
+        [id]
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }

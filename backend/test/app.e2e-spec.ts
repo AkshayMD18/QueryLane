@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { DataSource } from 'typeorm';
 
 jest.mock('@langchain/openrouter', () => {
   return {
@@ -16,6 +17,8 @@ jest.mock('@langchain/openrouter', () => {
 
 describe('App (e2e)', () => {
   let app: INestApplication<App>;
+  let createdGroupId: number;
+  let createdTableName: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -27,6 +30,26 @@ describe('App (e2e)', () => {
   });
 
   afterAll(async () => {
+    const dataSource = app.get(DataSource);
+    if (createdTableName) {
+      try {
+        await dataSource.query(`DROP TABLE IF EXISTS ${createdTableName}`);
+      } catch (e) {
+        console.error('Failed to drop table', e);
+      }
+      try {
+        await dataSource.query(`DELETE FROM tables WHERE tableName = ?`, [createdTableName]);
+      } catch (e) {
+        console.error('Failed to delete table record', e);
+      }
+    }
+    if (createdGroupId) {
+      try {
+        await dataSource.query(`DELETE FROM groups WHERE id = ?`, [createdGroupId]);
+      } catch (e) {
+        console.error('Failed to delete group', e);
+      }
+    }
     await app.close();
   });
 
@@ -43,15 +66,20 @@ describe('App (e2e)', () => {
       .expect(200);
 
     expect(groupsResponse.body.length).toBeGreaterThan(0);
-    const groupId = groupsResponse.body[0].id;
+    // Find the newly created group ID
+    const newGroup = groupsResponse.body.find((g: any) => g.name === 'E2E Test Group');
+    const groupId = newGroup ? newGroup.id : groupsResponse.body[0].id;
+    createdGroupId = groupId;
 
     // 3. Upload a CSV table
     const tableName = `e2e_table_${Date.now()}`;
+    createdTableName = tableName;
     const csvContent = 'name,value\nAlice,100\nBob,200';
     const uploadResponse = await request(app.getHttpServer())
       .post('/tables')
       .attach('file', Buffer.from(csvContent), 'data.csv')
       .query({ name: tableName, groupId });
+
 
     console.log('Upload Response Status:', uploadResponse.status, 'Body:', uploadResponse.body);
     expect(uploadResponse.status).toBe(201);
@@ -98,5 +126,26 @@ describe('App (e2e)', () => {
       .delete('/query')
       .query({ id: queryId })
       .expect(200);
+
+    // 8. Delete group cascadingly
+    await request(app.getHttpServer())
+      .delete(`/groups/${groupId}`)
+      .expect(200);
+
+    // Verify cleanup
+    const dataSource = app.get(DataSource);
+    const groups = await dataSource.query(`SELECT * FROM groups WHERE id = ?`, [groupId]);
+    expect(groups.length).toBe(0);
+
+    const tables = await dataSource.query(`SELECT * FROM tables WHERE groupId = ?`, [groupId]);
+    expect(tables.length).toBe(0);
+
+    let tableExists = true;
+    try {
+      await dataSource.query(`SELECT * FROM ${tableName} LIMIT 1`);
+    } catch {
+      tableExists = false;
+    }
+    expect(tableExists).toBe(false);
   });
 });

@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -20,5 +19,10 @@ export class GroupsController {
   @Get()
   findMany() {
     return this.groupsService.getAllGroups();
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.groupsService.deleteGroup(+id);
   }
 }

@@ -278,7 +278,6 @@ export class AgentsService {
         return {
             userQuery: data.query,
             SQLiteQuery: parsed.SQLiteQuery,
-            tables: parsed.tables,
             queryType: parsed.queryType
         };
     }
