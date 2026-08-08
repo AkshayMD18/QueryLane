@@ -10,6 +10,7 @@ describe('GroupsController', () => {
     createGroup: jest.fn(),
     getGroupById: jest.fn(),
     getAllGroups: jest.fn(),
+    getSnapshot: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -62,6 +63,41 @@ describe('GroupsController', () => {
       const response = await controller.findMany();
       expect(service.getAllGroups).toHaveBeenCalled();
       expect(response).toEqual(result);
+    });
+  });
+
+  describe('createPostgresSnapshot', () => {
+    it('should pass database, schema, and excluded tables to the service', async () => {
+      const result = { databaseName: 'sales', schemaName: 'public', tables: [] };
+      mockGroupsService.getSnapshot.mockResolvedValue(result);
+
+      const response = await controller.createPostgresSnapshot({
+        databaseName: 'sales',
+        schemaName: 'public',
+        excludedTables: ['audit_logs'],
+      });
+
+      expect(service.getSnapshot).toHaveBeenCalledWith(
+        'sales',
+        'public',
+        ['audit_logs'],
+      );
+      expect(response).toEqual(result);
+    });
+
+    it('should pass an empty exclusion list when omitted', async () => {
+      mockGroupsService.getSnapshot.mockResolvedValue({ tables: [] });
+
+      await controller.createPostgresSnapshot({
+        databaseName: 'sales',
+        schemaName: 'public',
+      });
+
+      expect(service.getSnapshot).toHaveBeenCalledWith(
+        'sales',
+        'public',
+        [],
+      );
     });
   });
 });

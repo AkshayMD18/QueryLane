@@ -53,6 +53,7 @@ export const GroupPage = () => {
         console.log("Generate group tasks");
     };
 
+
     const tables = response?.data;
     const total = response?.total || 0;
     const totalPages = Math.ceil(total / limit);
@@ -127,4 +128,3 @@ export const GroupPage = () => {
 };
 
 export default GroupPage;
-

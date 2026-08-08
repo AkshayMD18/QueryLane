@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllGroups, getGroupById, createGroup } from "@/api";
+import { getAllGroups, getGroupById, createGroup, createPostgresSnapshot } from "@/api";
+import type { PostgresSnapshotRequest } from "@/type/groups";
 
 export const useGroups = () => {
     return useQuery({
@@ -27,5 +28,11 @@ export const useCreateGroup = () => {
         onError: (error: any) => {
             console.error("Group creation failed", error);
         },
+    });
+};
+
+export const useCreatePostgresSnapshot = () => {
+    return useMutation({
+        mutationFn: (request: PostgresSnapshotRequest) => createPostgresSnapshot(request),
     });
 };

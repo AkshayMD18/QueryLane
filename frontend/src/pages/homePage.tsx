@@ -1,5 +1,5 @@
 import React from "react";
-import { useGroups, useCreateGroup } from "@/hook";
+import { useGroups, useCreateGroup, useCreatePostgresSnapshot } from "@/hook";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 const HomePage = () => {
     const { data: groups, isLoading } = useGroups();
     const { mutateAsync: createGroup, isPending: isCreating } = useCreateGroup();
+    const { mutateAsync: createPostgresSnapshot, isPending: isSnapshotting } = useCreatePostgresSnapshot();
     const [open, setOpen] = React.useState(false);
     const [groupName, setGroupName] = React.useState("");
     const navigate = useNavigate();
@@ -28,41 +29,69 @@ const HomePage = () => {
         }
     };
 
+    const handlePostgresSnapshot = async () => {
+        const databaseName = window.prompt("PostgreSQL database name:");
+        if (!databaseName?.trim()) return;
+
+        const schemaName = window.prompt("PostgreSQL schema name:", "public");
+        if (!schemaName?.trim()) return;
+
+        const excludedInput = window.prompt("Tables to exclude (comma-separated):", "");
+        const excludedTables = excludedInput
+            ? excludedInput.split(",").map((table) => table.trim()).filter(Boolean)
+            : [];
+
+        try {
+            const snapshot = await createPostgresSnapshot({ databaseName, schemaName, excludedTables });
+            console.log("PostgreSQL snapshot response:", snapshot);
+            console.log("Tables received:", snapshot?.tables?.length ?? 0);
+            alert(`PostgreSQL snapshot completed. Tables received: ${snapshot?.tables?.length ?? 0}`);
+        } catch (error) {
+            console.error("PostgreSQL snapshot failed", error);
+            alert("Failed to create PostgreSQL snapshot.");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader
                 heading="Groups"
                 description="List of available data groups"
                 actions={
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger render={<Button>Create Group</Button>} />
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Create Group</DialogTitle>
-                                <DialogDescription>
-                                    Create a new group to organize your database tables.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleCreateGroup} className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="groupName">Group Name</Label>
-                                    <Input
-                                        id="groupName"
-                                        placeholder="Enter group name"
-                                        value={groupName}
-                                        onChange={(e) => setGroupName(e.target.value)}
-                                        required
-                                        autoComplete="off"
-                                    />
-                                </div>
-                                <DialogFooter className="pt-4">
-                                    <Button type="submit" disabled={isCreating || !groupName.trim()}>
-                                        {isCreating ? "Creating..." : "Create"}
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex items-center gap-3">
+                        <Dialog open={open} onOpenChange={setOpen}>
+                            <DialogTrigger render={<Button>Create Group</Button>} />
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Create Group</DialogTitle>
+                                    <DialogDescription>
+                                        Create a new group to organize your database tables.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleCreateGroup} className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="groupName">Group Name</Label>
+                                        <Input
+                                            id="groupName"
+                                            placeholder="Enter group name"
+                                            value={groupName}
+                                            onChange={(e) => setGroupName(e.target.value)}
+                                            required
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                    <DialogFooter className="pt-4">
+                                        <Button type="submit" disabled={isCreating || !groupName.trim()}>
+                                            {isCreating ? "Creating..." : "Create"}
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                        <Button variant="outline" onClick={handlePostgresSnapshot} disabled={isSnapshotting}>
+                            {isSnapshotting ? "Snapshotting..." : "Import PostgreSQL"}
+                        </Button>
+                    </div>
                 }
             />
 

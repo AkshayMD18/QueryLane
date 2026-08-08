@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { DataSource } from 'typeorm';
+import { postgresDbConnector } from '../utils/utils.dbConnector';
 
 @Injectable()
 export class GroupsService {
@@ -96,4 +97,17 @@ export class GroupsService {
       await queryRunner.release();
     }
   }
+  
+  async getSnapshot(
+    databaseName: string,
+    schemaName: string,
+    excludedTables: string[] = [],
+  ) {
+    return postgresDbConnector.createSnapshot(
+      databaseName,
+      schemaName,
+      excludedTables,
+    );
+  }
 }
+

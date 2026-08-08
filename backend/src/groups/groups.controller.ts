@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { CreatePostgresSnapshotDto } from './dto/create-postgres-snapshot.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -19,6 +20,15 @@ export class GroupsController {
   @Get()
   findMany() {
     return this.groupsService.getAllGroups();
+  }
+
+  @Post('postgres-snapshot')
+  createPostgresSnapshot(@Body() snapshotDto: CreatePostgresSnapshotDto) {
+    return this.groupsService.getSnapshot(
+      snapshotDto.databaseName,
+      snapshotDto.schemaName,
+      snapshotDto.excludedTables ?? [],
+    );
   }
 
   @Delete(':id')
