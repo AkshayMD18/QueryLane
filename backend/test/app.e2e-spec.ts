@@ -177,4 +177,84 @@ describe('App (e2e)', () => {
     }
     expect(tableExists).toBe(false);
   });
+
+  it('should delete a group with foreign-key-dependent physical tables', async () => {
+    const dataSource = app.get(DataSource);
+    const suffix = Date.now();
+    const parentTableName = `borrower_${suffix}`;
+    const childTableName = `loan_${suffix}`;
+
+    await request(app.getHttpServer())
+      .post('/groups')
+      .send({ name: `FK Delete Test ${suffix}` })
+      .expect(201);
+
+    const groups = await dataSource.query(
+      `SELECT id FROM groups WHERE name = ?`,
+      [`FK Delete Test ${suffix}`],
+    );
+    const groupId = groups[0].id;
+
+    try {
+      // Create the child before the parent is dropped to reproduce the
+      // borrower/loan dependency that originally caused SQLITE_CONSTRAINT.
+      await dataSource.query(
+        `CREATE TABLE "${parentTableName}" (id INTEGER PRIMARY KEY)`,
+      );
+      await dataSource.query(
+        `CREATE TABLE "${childTableName}" (
+          id INTEGER PRIMARY KEY,
+          borrower_id INTEGER,
+          FOREIGN KEY (borrower_id) REFERENCES "${parentTableName}" (id)
+        )`,
+      );
+
+      await dataSource.query(
+        `INSERT INTO tables (name, tableName, summary, groupId) VALUES (?, ?, ?, ?)`,
+        [parentTableName, parentTableName, 'parent', groupId],
+      );
+      await dataSource.query(
+        `INSERT INTO tables (name, tableName, summary, groupId) VALUES (?, ?, ?, ?)`,
+        [childTableName, childTableName, 'child', groupId],
+      );
+      const parentMetadata = await dataSource.query(
+        `SELECT id FROM tables WHERE tableName = ? AND groupId = ?`,
+        [parentTableName, groupId],
+      );
+      const childMetadata = await dataSource.query(
+        `SELECT id FROM tables WHERE tableName = ? AND groupId = ?`,
+        [childTableName, groupId],
+      );
+
+      await dataSource.query(
+        `INSERT INTO queries (tableId, userQuery, query, queryType) VALUES (?, ?, ?, ?)`,
+        [parentMetadata[0].id, 'parent query', `SELECT * FROM ${parentTableName}`, 'table'],
+      );
+      await dataSource.query(
+        `INSERT INTO queries (tableId, userQuery, query, queryType) VALUES (?, ?, ?, ?)`,
+        [childMetadata[0].id, 'child query', `SELECT * FROM ${childTableName}`, 'table'],
+      );
+      await dataSource.query(
+        `INSERT INTO group_queries (groupId, userQuery, query, queryType) VALUES (?, ?, ?, ?)`,
+        [groupId, 'group query', `SELECT * FROM ${childTableName}`, 'table'],
+      );
+
+      await request(app.getHttpServer())
+        .delete(`/groups/${groupId}`)
+        .expect(200);
+
+      expect(await dataSource.query(`SELECT id FROM groups WHERE id = ?`, [groupId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT id FROM tables WHERE groupId = ?`, [groupId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT id FROM queries WHERE tableId IN (?, ?)`, [parentMetadata[0].id, childMetadata[0].id])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT id FROM group_queries WHERE groupId = ?`, [groupId])).toHaveLength(0);
+      await expect(dataSource.query(`SELECT * FROM "${parentTableName}"`)).rejects.toThrow();
+      await expect(dataSource.query(`SELECT * FROM "${childTableName}"`)).rejects.toThrow();
+    } finally {
+      // The endpoint should remove everything; this only protects the shared
+      // e2e database if an assertion fails midway.
+      await dataSource.query(`DROP TABLE IF EXISTS "${childTableName}"`).catch(() => undefined);
+      await dataSource.query(`DROP TABLE IF EXISTS "${parentTableName}"`).catch(() => undefined);
+      await dataSource.query(`DELETE FROM groups WHERE id = ?`, [groupId]).catch(() => undefined);
+    }
+  });
 });

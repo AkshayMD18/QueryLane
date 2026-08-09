@@ -7,7 +7,7 @@ export class LlmserviceService {
 
     constructor() {
         this.model = new ChatOpenRouter(
-            "openai/gpt-oss-20b:free",
+            "nvidia/nemotron-3-ultra-550b-a55b:free",
             {
                 apiKey: process.env.OPENROUTER_API_KEY,
                 temperature: 0.8,

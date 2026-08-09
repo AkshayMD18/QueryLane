@@ -2,7 +2,7 @@ import { Database } from 'sqlite3';
 
 
 interface SQLiteForeignKeyRow {
-    id: number;
+  id: number;
     seq: number;
     table: string; // The table that is referenced
     from: string;  // The column in the current table
@@ -23,7 +23,7 @@ export const getForeignKeys = (
     db: Database,
     tableNames: string[]
 ): Promise<ForeignKeyInfo[]> => {
-    const promises = tableNames.map((tableName) => {
+  const promises = tableNames.map((tableName) => {
         return new Promise<ForeignKeyInfo[]>((resolve, reject) => {
             db.all(`PRAGMA foreign_key_list('${tableName}')`, (err, rows: SQLiteForeignKeyRow[]) => {
                 if (err) {

@@ -3,6 +3,8 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { DataSource } from 'typeorm';
 import { postgresDbConnector } from '../utils/utils.dbConnector';
+import { copyPostgresToSqlite } from '../utils/utils.copyDb';
+import { join } from 'node:path';
 
 @Injectable()
 export class GroupsService {
@@ -59,32 +61,58 @@ export class GroupsService {
         [id]
       );
 
-      // 2. Loop through each table and delete its associated data
+      // 2. Remove query metadata before removing table metadata.
       for (const table of tables) {
-        // Drop the actual SQLite table
-        const quotedTableName = `"${String(table.tableName).replace(/"/g, '""')}"`;
-        await queryRunner.manager.query(`DROP TABLE IF EXISTS ${quotedTableName}`);
-
-        // Delete all queries associated with this table
         await queryRunner.manager.query(
           `DELETE FROM queries WHERE tableId = ?`,
           [table.id]
         );
+      }
 
-        // Delete the table metadata record
+      // 3. Drop physical tables in dependency order. A table such as
+      // "borrower" may be referenced by another imported table, and SQLite
+      // rejects dropping the parent while foreign_keys are enabled.
+      let pendingTables = [...tables];
+      while (pendingTables.length > 0) {
+        const remainingTables: typeof pendingTables = [];
+        let droppedAny = false;
+
+        for (const table of pendingTables) {
+          const quotedTableName = `"${String(table.tableName).replace(/"/g, '""')}"`;
+          try {
+            await queryRunner.manager.query(`DROP TABLE IF EXISTS ${quotedTableName}`);
+            droppedAny = true;
+          } catch (error) {
+            // Defer only foreign-key failures; other errors should fail the
+            // transaction immediately.
+            if ((error as any)?.code !== 'SQLITE_CONSTRAINT') {
+              throw error;
+            }
+            remainingTables.push(table);
+          }
+        }
+
+        if (!droppedAny) {
+          throw new Error('Unable to drop group tables because of unresolved foreign-key dependencies');
+        }
+        pendingTables = remainingTables;
+      }
+
+      // 4. Delete table metadata records.
+      for (const table of tables) {
         await queryRunner.manager.query(
           `DELETE FROM tables WHERE id = ?`,
           [table.id]
         );
       }
 
-      // 3. Delete group queries
+      // 5. Delete group queries
       await queryRunner.manager.query(
         `DELETE FROM group_queries WHERE groupId = ?`,
         [id]
       );
 
-      // 4. Delete the group itself
+      // 6. Delete the group itself
       await queryRunner.manager.query(
         `DELETE FROM groups WHERE id = ?`,
         [id]
@@ -104,6 +132,7 @@ export class GroupsService {
     schemaName: string,
     excludedTables: string[] = [],
   ) {
+    console.log('[postgres-snapshot] Request options', { databaseName, schemaName, excludedTables });
     const snapshot = await postgresDbConnector.createSnapshot(
       databaseName,
       schemaName,
@@ -112,7 +141,36 @@ export class GroupsService {
 
     const createdDate = new Date().toISOString().slice(0, 10);
     const groupName = `${databaseName}_${createdDate}`;
+
+    // Keep the migration connection aligned with PostgresDbConnector.
+    // databaseName is supplied separately below because the connection URL
+    // intentionally does not hardcode the selected database.
+    const connectionString = `postgresql://postgres:akshay18@localhost:5432/${encodeURIComponent(databaseName)}`;
+    console.log('[postgres-snapshot] Connector returned tables', { count: snapshot.tables.length, tables: snapshot.tables.map(table => table.tableName) });
+    const copy = await copyPostgresToSqlite({
+      connectionString,
+      databaseName,
+      schema: schemaName,
+      omitTables: excludedTables,
+      sqlitePath: join(process.cwd(), 'db.sqlite'),
+      preserveExisting: true,
+    });
+    if (snapshot.tables.length > 0 && copy.tables.length === 0) {
+      throw new Error(
+        `PostgreSQL snapshot mismatch: source connector returned ${snapshot.tables.length} table(s), ` +
+        `but the migration connection returned 0. Check POSTGRES_CONNECTION_STRING and database credentials.`,
+      );
+    }
+    // Do not create a visible group until the physical migration and validation succeed.
     const group = await this.createGroup(groupName);
+    const groupId = group.identifiers[0]?.id ?? group.raw?.[0]?.id;
+    for (const table of copy.tables) {
+      await this.dataSource.query(
+        `INSERT INTO tables (name, tableName, summary, groupId) VALUES (?, ?, ?, ?)`,
+        [`${groupName}_${table.tableName}`, table.tableName,
+          `Migrated from PostgreSQL (${table.rowCount} rows)`, groupId],
+      );
+    }
 
     return {
       ...snapshot,
