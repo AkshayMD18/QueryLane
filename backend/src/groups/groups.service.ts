@@ -9,7 +9,7 @@ export class GroupsService {
   constructor(private readonly dataSource: DataSource) { }
   async createGroup(name: string) {
     try {
-      await this.dataSource
+      return await this.dataSource
         .createQueryBuilder()
         .insert()
         .into("groups")
@@ -62,7 +62,8 @@ export class GroupsService {
       // 2. Loop through each table and delete its associated data
       for (const table of tables) {
         // Drop the actual SQLite table
-        await queryRunner.manager.query(`DROP TABLE IF EXISTS ${table.tableName}`);
+        const quotedTableName = `"${String(table.tableName).replace(/"/g, '""')}"`;
+        await queryRunner.manager.query(`DROP TABLE IF EXISTS ${quotedTableName}`);
 
         // Delete all queries associated with this table
         await queryRunner.manager.query(
@@ -103,11 +104,23 @@ export class GroupsService {
     schemaName: string,
     excludedTables: string[] = [],
   ) {
-    return postgresDbConnector.createSnapshot(
+    const snapshot = await postgresDbConnector.createSnapshot(
       databaseName,
       schemaName,
       excludedTables,
     );
+
+    const createdDate = new Date().toISOString().slice(0, 10);
+    const groupName = `${databaseName}_${createdDate}`;
+    const group = await this.createGroup(groupName);
+
+    return {
+      ...snapshot,
+      group: {
+        name: groupName,
+        insertResult: group,
+      },
+    };
   }
 }
 
