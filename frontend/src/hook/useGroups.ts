@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllGroups, getGroupById, createGroup, createPostgresSnapshot } from "@/api";
+import { getAllGroups, getGroupById, createGroup, createPostgresSnapshot, deleteGroup } from "@/api";
 import type { PostgresSnapshotRequest } from "@/type/groups";
 
 export const useGroups = () => {
@@ -32,7 +32,23 @@ export const useCreateGroup = () => {
 };
 
 export const useCreatePostgresSnapshot = () => {
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: (request: PostgresSnapshotRequest) => createPostgresSnapshot(request),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["groups"] });
+        },
+    });
+};
+
+export const useDeleteGroup = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => deleteGroup(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["groups"] });
+        },
     });
 };

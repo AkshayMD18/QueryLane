@@ -20,3 +20,8 @@ export const createPostgresSnapshot = async (request: PostgresSnapshotRequest) =
     const response = await apiClient.post("/groups/postgres-snapshot", request);
     return response.data;
 };
+
+export const deleteGroup = async (id: number) => {
+    const response = await apiClient.delete(`/groups/${id}`);
+    return response.data;
+};

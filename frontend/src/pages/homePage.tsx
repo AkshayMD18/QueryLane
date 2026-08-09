@@ -1,5 +1,5 @@
 import React from "react";
-import { useGroups, useCreateGroup, useCreatePostgresSnapshot } from "@/hook";
+import { useGroups, useCreateGroup, useCreatePostgresSnapshot, useDeleteGroup } from "@/hook";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
@@ -8,11 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PostgresSnapshotModal } from "@/components/homePage/postgresSnapshotModal";
+import type { PostgresSnapshotRequest } from "@/type/groups";
+import { Trash2 } from "lucide-react";
 
 const HomePage = () => {
     const { data: groups, isLoading } = useGroups();
     const { mutateAsync: createGroup, isPending: isCreating } = useCreateGroup();
     const { mutateAsync: createPostgresSnapshot, isPending: isSnapshotting } = useCreatePostgresSnapshot();
+    const { mutateAsync: deleteGroup, isPending: isDeleting } = useDeleteGroup();
     const [open, setOpen] = React.useState(false);
     const [groupName, setGroupName] = React.useState("");
     const navigate = useNavigate();
@@ -29,18 +33,7 @@ const HomePage = () => {
         }
     };
 
-    const handlePostgresSnapshot = async () => {
-        const databaseName = window.prompt("PostgreSQL database name:");
-        if (!databaseName?.trim()) return;
-
-        const schemaName = window.prompt("PostgreSQL schema name:", "public");
-        if (!schemaName?.trim()) return;
-
-        const excludedInput = window.prompt("Tables to exclude (comma-separated):", "");
-        const excludedTables = excludedInput
-            ? excludedInput.split(",").map((table) => table.trim()).filter(Boolean)
-            : [];
-
+    const handlePostgresSnapshot = async ({ databaseName, schemaName, excludedTables }: PostgresSnapshotRequest) => {
         try {
             const snapshot = await createPostgresSnapshot({ databaseName, schemaName, excludedTables });
             console.log("PostgreSQL snapshot response:", snapshot);
@@ -49,6 +42,18 @@ const HomePage = () => {
         } catch (error) {
             console.error("PostgreSQL snapshot failed", error);
             alert("Failed to create PostgreSQL snapshot.");
+        }
+    };
+
+    const handleDeleteGroup = async (event: React.MouseEvent, groupId: number) => {
+        event.stopPropagation();
+        if (!window.confirm("Delete this group and all of its tables?")) return;
+
+        try {
+            await deleteGroup(groupId);
+        } catch (error) {
+            console.error("Failed to delete group", error);
+            alert("Failed to delete group.");
         }
     };
 
@@ -88,9 +93,7 @@ const HomePage = () => {
                                 </form>
                             </DialogContent>
                         </Dialog>
-                        <Button variant="outline" onClick={handlePostgresSnapshot} disabled={isSnapshotting}>
-                            {isSnapshotting ? "Snapshotting..." : "Import PostgreSQL"}
-                        </Button>
+                        <PostgresSnapshotModal onSubmit={handlePostgresSnapshot} isSubmitting={isSnapshotting} />
                     </div>
                 }
             />
@@ -109,9 +112,20 @@ const HomePage = () => {
                             className="cursor-pointer transition-all hover:ring-2 hover:ring-primary/50"
                             onClick={() => navigate(`/group/${group.id}`)}
                         >
-                            <CardHeader>
+                            <CardHeader className="relative">
                                 <CardTitle>{group.name}</CardTitle>
                                 <CardDescription>ID: {group.id}</CardDescription>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="absolute top-3 right-3 text-muted-foreground hover:text-destructive"
+                                    onClick={(event) => handleDeleteGroup(event, Number(group.id))}
+                                    disabled={isDeleting}
+                                    aria-label={`Delete ${group.name}`}
+                                >
+                                    <Trash2 />
+                                </Button>
                             </CardHeader>
                         </Card>
                     ))}
