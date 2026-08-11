@@ -3,7 +3,7 @@ export type queryResponse = {
     queryType: string;
 }
 
-export type QueryRow = Record<string, any>;
+export type QueryRow = Record<string, unknown>;
 
 export type QueryResult = {
     id: string;

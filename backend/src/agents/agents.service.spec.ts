@@ -8,7 +8,9 @@ jest.mock('@langchain/core/prompts', () => {
     ChatPromptTemplate: {
       fromMessages: jest.fn().mockReturnValue({
         pipe: jest.fn().mockReturnValue({
-          invoke: jest.fn().mockResolvedValue({ recommendation: ['Analyze active users'] }),
+          invoke: jest
+            .fn()
+            .mockResolvedValue({ recommendation: ['Analyze active users'] }),
         }),
       }),
     },

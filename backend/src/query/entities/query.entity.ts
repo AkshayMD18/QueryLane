@@ -2,36 +2,36 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('queries')
 export class Queries {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    tableId: number;
+  @Column()
+  tableId: number;
 
-    @Column()
-    userQuery: string;
+  @Column()
+  userQuery: string;
 
-    @Column()
-    query: string;
+  @Column()
+  query: string;
 
-    @Column()
-    queryType: string;
+  @Column()
+  queryType: string;
 }
 
 @Entity('group_queries')
 export class GroupQuery {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    groupId: number;
+  @Column()
+  groupId: number;
 
-    @Column()
-    userQuery: string;
+  @Column()
+  userQuery: string;
 
-    @Column()
-    query: string;
+  @Column()
+  query: string;
 
-    @Column()
-    queryType: string;
+  @Column()
+  queryType: string;
 }

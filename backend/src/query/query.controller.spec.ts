@@ -54,7 +54,11 @@ describe('QueryController', () => {
       mockQueryService.executeAndStoreQuery.mockResolvedValue(mockResult);
 
       const response = await controller.executeQuery({
-        query: { SQLiteQuery: 'SELECT *', tableName: 'users', queryType: 'table' },
+        query: {
+          SQLiteQuery: 'SELECT *',
+          tableName: 'users',
+          queryType: 'table',
+        },
         tableId: 1,
         userQuery: 'get all users',
       });
@@ -67,7 +71,9 @@ describe('QueryController', () => {
   describe('getAllQueriesForTable', () => {
     it('should throw BadRequestException if table is not found', async () => {
       mockTableService.getTableById.mockResolvedValue(null);
-      await expect(controller.getAllQueriesForTable({ tableId: 1 })).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getAllQueriesForTable({ tableId: 1 }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should execute saved queries and return list', async () => {

@@ -25,7 +25,7 @@ export const useCreateGroup = () => {
             queryClient.invalidateQueries({ queryKey: ["groups"] });
             console.log("Group created successfully", data);
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             console.error("Group creation failed", error);
         },
     });

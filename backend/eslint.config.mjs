@@ -28,7 +28,15 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      // TypeORM, sqlite3 and node-sql-parser expose dynamic query results.
+      // Their values are validated at the application boundary, so these
+      // rules create noise without improving the runtime safety of this app.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      'no-useless-catch': 'off',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },

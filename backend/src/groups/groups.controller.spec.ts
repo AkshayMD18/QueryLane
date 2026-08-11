@@ -68,7 +68,11 @@ describe('GroupsController', () => {
 
   describe('createPostgresSnapshot', () => {
     it('should pass database, schema, and excluded tables to the service', async () => {
-      const result = { databaseName: 'sales', schemaName: 'public', tables: [] };
+      const result = {
+        databaseName: 'sales',
+        schemaName: 'public',
+        tables: [],
+      };
       mockGroupsService.getSnapshot.mockResolvedValue(result);
 
       const response = await controller.createPostgresSnapshot({
@@ -77,11 +81,9 @@ describe('GroupsController', () => {
         excludedTables: ['audit_logs'],
       });
 
-      expect(service.getSnapshot).toHaveBeenCalledWith(
-        'sales',
-        'public',
-        ['audit_logs'],
-      );
+      expect(service.getSnapshot).toHaveBeenCalledWith('sales', 'public', [
+        'audit_logs',
+      ]);
       expect(response).toEqual(result);
     });
 
@@ -93,11 +95,7 @@ describe('GroupsController', () => {
         schemaName: 'public',
       });
 
-      expect(service.getSnapshot).toHaveBeenCalledWith(
-        'sales',
-        'public',
-        [],
-      );
+      expect(service.getSnapshot).toHaveBeenCalledWith('sales', 'public', []);
     });
   });
 });

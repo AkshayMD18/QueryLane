@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PostgresSnapshotModal } from "@/components/homePage/postgresSnapshotModal";
 import type { PostgresSnapshotRequest } from "@/type/groups";
+import type { Group } from "@/type/groups";
 import { Trash2 } from "lucide-react";
 
 const HomePage = () => {
@@ -106,7 +107,7 @@ const HomePage = () => {
                 </div>
             ) : groups && groups.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {groups.map((group: any) => (
+                    {groups.map((group: Group) => (
                         <Card 
                             key={group.id} 
                             className="cursor-pointer transition-all hover:ring-2 hover:ring-primary/50"

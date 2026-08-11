@@ -32,7 +32,7 @@ const ValueCard = ({ data }: { data: QueryRow[] }) => {
 
     return (
         <div className="flex items-center justify-left">
-            <p className="text-4xl font-bold tracking-tight text-primary">{value}</p>
+            <p className="text-4xl font-bold tracking-tight text-primary">{String(value ?? '')}</p>
         </div>
     );
 };

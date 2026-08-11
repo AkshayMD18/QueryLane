@@ -41,7 +41,7 @@ export const useUploadTable = () => {
             console.log('Table uploaded successfully', data);
         },
 
-        onError: (error: any) => {
+        onError: (error: Error) => {
             console.error('Table upload failed', error);
         },
     });

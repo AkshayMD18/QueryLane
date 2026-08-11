@@ -107,7 +107,9 @@ describe('TableService', () => {
 
     it('should throw BadRequestException if table is not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
-      await expect(service.getColumns('t')).rejects.toThrow(BadRequestException);
+      await expect(service.getColumns('t')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

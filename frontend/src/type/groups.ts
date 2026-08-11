@@ -3,3 +3,5 @@ export type PostgresSnapshotRequest = {
     schemaName: string;
     excludedTables?: string[];
 };
+
+export type Group = { id: number; name: string };

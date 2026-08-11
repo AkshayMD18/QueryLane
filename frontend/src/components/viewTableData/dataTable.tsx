@@ -15,19 +15,19 @@ export const DataTable = ({ columns, tableData, tableName }: DataTableProps) => 
             <Table>
                 <TableHeader>
                     <TableRow className="bg-muted/50">
-                        {columns.map((col: any) => (
+                        {columns.map((col) => (
                             <TableHead key={col.name}>{col.name}</TableHead>
                         ))}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {tableData.map((row: any, idx: number) => (
+                    {tableData.map((row, idx: number) => (
                         <TableRow
                             key={idx}
                             className="cursor-pointer transition-colors hover:bg-muted/50"
                             onClick={() => console.log(`Clicked row in ${tableName}`, row)}
                         >
-                            {columns.map((col: any) => (
+                            {columns.map((col) => (
                                 <TableCell key={col.name}>{row[col.name]?.toString() || '-'}</TableCell>
                             ))}
                         </TableRow>

@@ -14,9 +14,7 @@ import { UploadTableDto } from './dto/upload-table.dto';
 
 @Controller('tables')
 export class TableController {
-  constructor(
-    private readonly tableService: TableService,
-  ) { }
+  constructor(private readonly tableService: TableService) {}
 
   @Get('/')
   async getTables(@Query() paginationDto: PaginationDto) {
@@ -38,7 +36,8 @@ export class TableController {
   async getTableData(
     @Param('name')
     name: string,
-    @Query() paginationDto: PaginationDto) {
+    @Query() paginationDto: PaginationDto,
+  ) {
     const { page, limit } = paginationDto;
     return this.tableService.getTableData(name, page, limit);
   }
@@ -49,6 +48,10 @@ export class TableController {
     @UploadedFile() file: Express.Multer.File,
     @Query() uploadTableDto: UploadTableDto,
   ) {
-    return await this.tableService.parseAndSaveFile(file, uploadTableDto.name, uploadTableDto.groupId);
+    return await this.tableService.parseAndSaveFile(
+      file,
+      uploadTableDto.name,
+      uploadTableDto.groupId,
+    );
   }
 }

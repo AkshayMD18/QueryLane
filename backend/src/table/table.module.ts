@@ -8,9 +8,13 @@ import { TableEntity } from './entities/table.entity';
 import { GroupsModule } from '../groups/groups.module';
 
 @Module({
-  imports: [AgentsModule, TypeOrmModule.forFeature([TableEntity]), GroupsModule],
+  imports: [
+    AgentsModule,
+    TypeOrmModule.forFeature([TableEntity]),
+    GroupsModule,
+  ],
   controllers: [TableController],
   providers: [TableService, TableRepository],
   exports: [TableService, TableRepository],
 })
-export class TableModule { }
+export class TableModule {}
