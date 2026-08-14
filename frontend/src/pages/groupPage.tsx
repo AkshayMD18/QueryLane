@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGroupById, useTables, useUploadTable, useGenerateJoinQuery, useGetAllQueriesForGroup, useExecuteAndStoreGroupQuery, useDeleteGroupQuery } from "@/hook";
+import { useGroupById, useTables, useUploadTable, useGenerateJoinQuery, useGenerateSchemaForGroup, useGetAllQueriesForGroup, useExecuteAndStoreGroupQuery, useDeleteGroupQuery } from "@/hook";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
@@ -18,6 +18,7 @@ export const GroupPage = () => {
     const { data: response, isLoading: isTablesLoading } = useTables(page + 1, limit, Number(groupId));
     const { mutateAsync: uploadTable, isPending: isUploading } = useUploadTable();
     const { mutateAsync: generateJoinQuery, isPending: isGeneratingJoinQuery } = useGenerateJoinQuery();
+    const { mutateAsync: generateSchemaForGroup, isPending: isGeneratingSchema } = useGenerateSchemaForGroup();
     const { data: queries } = useGetAllQueriesForGroup(Number(groupId));
     const { mutateAsync: executeAndStoreGroupQuery, isPending: isExecutingGroupQuery } = useExecuteAndStoreGroupQuery();
     const { mutateAsync: deleteGroupQuery } = useDeleteGroupQuery();
@@ -53,6 +54,15 @@ export const GroupPage = () => {
         console.log("Generate group tasks");
     };
 
+    const handleGenerateSchema = async () => {
+        try {
+            const schema = await generateSchemaForGroup(Number(groupId));
+            console.log("Generated database schema:", schema);
+        } catch (error) {
+            console.error("Schema generation failed:", error);
+        }
+    };
+
 
     const tables = response?.data;
     const total = response?.total || 0;
@@ -83,6 +93,13 @@ export const GroupPage = () => {
                             isQueryLoading={isGeneratingJoinQuery || isExecutingGroupQuery}
                             isGeneratingTasks={false}
                         />
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateSchema}
+                            disabled={isGeneratingSchema}
+                        >
+                            {isGeneratingSchema ? "Generating Schema..." : "Generate Schema"}
+                        </Button>
                         <UploadModal onUpload={handleUpload} isUploading={isUploading} />
                     </div>
                 }

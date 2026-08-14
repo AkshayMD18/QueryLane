@@ -1,6 +1,9 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { postgresDbConnector } from '../utils/utils.dbConnector';
+import {
+  getPostgresConfig,
+  postgresDbConnector,
+} from '../utils/utils.dbConnector';
 import { copyPostgresToSqlite } from '../utils/utils.copyDb';
 import { DatabaseService } from '../database/database.service';
 
@@ -154,7 +157,8 @@ export class GroupsService {
     // Keep the migration connection aligned with PostgresDbConnector.
     // databaseName is supplied separately below because the connection URL
     // intentionally does not hardcode the selected database.
-    const connectionString = `postgresql://postgres:akshay18@localhost:5432/${encodeURIComponent(databaseName)}`;
+    const postgresConfig = getPostgresConfig();
+    const connectionString = `postgresql://${encodeURIComponent(postgresConfig.user)}:${encodeURIComponent(postgresConfig.password)}@${postgresConfig.host}:${postgresConfig.port}/${encodeURIComponent(databaseName)}`;
     console.log('[postgres-snapshot] Connector returned tables', {
       count: snapshot.tables.length,
       tables: snapshot.tables.map((table) => table.tableName),
@@ -167,6 +171,11 @@ export class GroupsService {
     if (!this.databases) throw new Error('Database service is unavailable');
     const databasePath = group.databasePath;
     try {
+      const groupId = group.identifiers[0]?.id ?? group.raw?.[0]?.id;
+      await this.dataSource.query(
+        'UPDATE groups SET sourceDatabaseName = ?, sourceSchemaName = ? WHERE id = ?',
+        [databaseName, schemaName, groupId],
+      );
       const copy = await copyPostgresToSqlite({
         connectionString,
         databaseName,
@@ -181,12 +190,11 @@ export class GroupsService {
             `but the migration connection returned 0. Check POSTGRES_CONNECTION_STRING and database credentials.`,
         );
       }
-      const groupId = group.identifiers[0]?.id ?? group.raw?.[0]?.id;
       for (const table of copy.tables) {
         await this.dataSource.query(
           `INSERT INTO tables (name, tableName, summary, groupId) VALUES (?, ?, ?, ?)`,
           [
-            `${groupName}_${table.tableName}`,
+            `${table.tableName}`,
             table.tableName,
             `Migrated from PostgreSQL (${table.rowCount} rows)`,
             groupId,

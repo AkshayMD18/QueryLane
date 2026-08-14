@@ -38,4 +38,9 @@ export class AgentsController {
       groupId: Number(groupId),
     });
   }
+
+  @Post('generate-schema')
+  async generateSchema(@Body('groupId') groupId: string) {
+    return this.agentsService.generateSchemaForGroup(Number(groupId));
+  }
 }

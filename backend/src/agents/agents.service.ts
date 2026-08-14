@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { LlmserviceService } from '../llmservice/llmservice.service';
 import {
@@ -10,13 +10,19 @@ import {
 } from 'src/types';
 import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
 import { getForeignKeys } from '../utils/utils.getForigenKeys';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { Group } from '../groups/entities/group.entity';
 import { DatabaseService } from '../database/database.service';
+import { getDbSchema } from '../utils/utils.getDbSchema';
 @Injectable()
 export class AgentsService {
   constructor(
     private readonly llmService: LlmserviceService,
     private readonly dataSource: DataSource,
+    @Optional()
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     @Optional() private readonly databases?: DatabaseService,
   ) {}
 
@@ -27,7 +33,7 @@ export class AgentsService {
         `You are a data analysis recommendation agent.
                 Your job is to:
                 1. Understand the dataset
-                2. Generate a list of useful and practical analysis that can be performed on the dataset 
+                2. Generate a list of useful and practical analysis that can be performed on the dataset
 
                 STRICT RULES:
                 - Output MUST be a JSON array of strings
@@ -322,5 +328,30 @@ export class AgentsService {
       SQLiteQuery: parsed.SQLiteQuery,
       queryType: parsed.queryType,
     };
+  }
+
+  async generateSchemaForGroup(groupId: number) {
+    const group = await this.groupRepository.findOne({
+      where: { id: groupId },
+      select: ['id', 'sourceDatabaseName', 'sourceSchemaName'],
+    });
+
+    if (!group) {
+      throw new BadRequestException('Group not found');
+    }
+
+    if (!group.sourceDatabaseName || !group.sourceSchemaName) {
+      throw new BadRequestException(
+        'This group does not have PostgreSQL source connection details',
+      );
+    }
+
+    const rawSchema = await getDbSchema(
+      group.sourceDatabaseName,
+      group.sourceSchemaName,
+    );
+
+    console.log(rawSchema);
+    return rawSchema;
   }
 }

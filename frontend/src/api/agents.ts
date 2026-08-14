@@ -14,3 +14,8 @@ export const generateJoinQuery = async (groupId: number, query: string) => {
     const response = await apiClient.post(`/agents/join-query`, { groupId, query });
     return response.data;
 }
+
+export const generateSchemaForGroup = async (groupId: number) => {
+    const response = await apiClient.post("/agents/generate-schema", { groupId });
+    return response.data;
+};

@@ -1,22 +1,32 @@
+import 'dotenv/config';
 import { Client } from 'pg';
 
-/**
- * Temporary local PostgreSQL configuration.
- * Move these values to environment variables or a secret store before deploying.
- */
 const POSTGRES_CONFIG = {
-  host: 'localhost',
-  port: 5432,
-  user: 'postgres',
-  password: 'akshay18',
-  database: 'v-track-collateral',
+  host: process.env.POSTGRES_HOST ?? 'localhost',
+  port: Number(process.env.POSTGRES_PORT ?? 5432),
+  user: process.env.POSTGRES_USER ?? 'postgres',
+  password: String(process.env.POSTGRES_PASSWORD ?? ''),
+  database: process.env.POSTGRES_DATABASE ?? '',
 };
 
-const POSTGRES_SCHEMA = 'public';
-const EXCLUDED_TABLES: string[] = [
-  // 'audit_logs',
-  // 'large_events',
-];
+const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA ?? 'public';
+const EXCLUDED_TABLES = (process.env.POSTGRES_EXCLUDED_TABLES ?? '')
+  .split(',')
+  .map((table) => table.trim())
+  .filter(Boolean);
+
+export const getPostgresConfig = () => ({ ...POSTGRES_CONFIG });
+
+function validatePostgresConfig() {
+  if (
+    !POSTGRES_CONFIG.password ||
+    POSTGRES_CONFIG.password === 'your_postgres_password'
+  ) {
+    throw new Error(
+      'POSTGRES_PASSWORD is missing or still set to the placeholder value. Set it in backend/.env and restart the server.',
+    );
+  }
+}
 
 export type SnapshotColumn = {
   name: string;
@@ -45,6 +55,7 @@ export class PostgresDbConnector {
     schemaName = POSTGRES_SCHEMA,
     excludedTables = EXCLUDED_TABLES,
   ): Promise<PostgresSnapshot> {
+    validatePostgresConfig();
     this.validateIdentifier(schemaName, 'schema');
 
     const excluded = new Set(

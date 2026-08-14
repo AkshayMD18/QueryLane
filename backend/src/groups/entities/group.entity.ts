@@ -10,4 +10,10 @@ export class Group {
 
   @Column({ nullable: true })
   databasePath: string;
+
+  @Column({ nullable: true })
+  sourceDatabaseName: string;
+
+  @Column({ nullable: true })
+  sourceSchemaName: string;
 }
