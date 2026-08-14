@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { Client } from 'pg';
+import knex, { Knex } from 'knex';
+import schemaInspector from 'knex-schema-inspector';
 
 const POSTGRES_CONFIG = {
   host: process.env.POSTGRES_HOST ?? 'localhost',
@@ -65,92 +66,63 @@ export class PostgresDbConnector {
       }),
     );
 
-    const client = new Client({ ...POSTGRES_CONFIG, database: databaseName });
+    const db = knex({
+      client: 'pg',
+      connection: { ...POSTGRES_CONFIG, database: databaseName },
+    });
 
     try {
-      await client.connect();
-      await client.query('SELECT 1');
-
-      const tableResult = await client.query<{
-        table_schema: string;
-        table_name: string;
-      }>(
-        `SELECT table_schema, table_name
-                 FROM information_schema.tables
-                 WHERE table_schema = $1
-                   AND table_type = 'BASE TABLE'
-                 ORDER BY table_name`,
-        [schemaName],
-      );
+      const inspector = schemaInspector(db);
+      inspector.withSchema?.(schemaName);
+      const tableNames = await inspector.tables();
 
       const tables: SnapshotTable[] = [];
 
-      for (const table of tableResult.rows) {
-        if (excluded.has(table.table_name)) continue;
+      for (const tableName of tableNames) {
+        if (excluded.has(tableName)) continue;
 
-        const columns = await this.getColumns(
-          client,
-          schemaName,
-          table.table_name,
-        );
-        const rowCountResult = await client.query<{ count: string }>(
-          `SELECT COUNT(*)::text AS count
-                     FROM ${this.quoteIdentifier(schemaName)}.${this.quoteIdentifier(table.table_name)}`,
-        );
+        const columns = await this.getColumns(inspector, tableName);
+        const rowCountResult = await db
+          .withSchema(schemaName)
+          .from(tableName)
+          .count<{ count: string }[]>('* as count')
+          .first();
 
-        const rows = await this.readRows(client, schemaName, table.table_name);
+        const rows = await this.readRows(db, schemaName, tableName);
 
         tables.push({
           schemaName,
-          tableName: table.table_name,
+          tableName,
           columns,
-          rowCount: Number(rowCountResult.rows[0]?.count ?? 0),
+          rowCount: Number(rowCountResult?.count ?? 0),
           rows,
         });
       }
 
       return { databaseName, schemaName, tables };
     } finally {
-      await client.end().catch(() => undefined);
+      await db.destroy();
     }
   }
 
   private async getColumns(
-    client: Client,
-    schemaName: string,
+    inspector: ReturnType<typeof schemaInspector>,
     tableName: string,
   ) {
-    const result = await client.query<{
-      column_name: string;
-      data_type: string;
-      is_nullable: string;
-    }>(
-      `SELECT column_name, data_type, is_nullable
-             FROM information_schema.columns
-             WHERE table_schema = $1 AND table_name = $2
-             ORDER BY ordinal_position`,
-      [schemaName, tableName],
-    );
-
-    return result.rows.map((column) => ({
-      name: column.column_name,
+    const columns = await inspector.columnInfo(tableName);
+    return columns.map((column) => ({
+      name: column.name,
       sourceType: column.data_type,
       normalizedType: this.normalizeType(column.data_type),
-      nullable: column.is_nullable === 'YES',
+      nullable: column.is_nullable,
     }));
   }
 
-  private async readRows(
-    client: Client,
-    schemaName: string,
-    tableName: string,
-  ) {
-    const result = await client.query(
-      `SELECT *
-             FROM ${this.quoteIdentifier(schemaName)}.${this.quoteIdentifier(tableName)}`,
-    );
-
-    return result.rows as Record<string, unknown>[];
+  private async readRows(db: Knex, schemaName: string, tableName: string) {
+    return (await db
+      .withSchema(schemaName)
+      .from(tableName)
+      .select('*')) as Record<string, unknown>[];
   }
 
   private normalizeType(type: string): string {

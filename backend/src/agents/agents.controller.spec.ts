@@ -12,6 +12,7 @@ describe('AgentsController', () => {
     generateAnalysisTasks: jest.fn(),
     generateQuery: jest.fn(),
     generateQueryForMultipleTables: jest.fn(),
+    generateSchemaForGroupQuery: jest.fn(),
   };
 
   const mockTableService = {
@@ -87,13 +88,18 @@ describe('AgentsController', () => {
       const mockGroupData = [{ tableName: 'users' }];
       const mockQueryRes = { SQLiteQuery: 'SELECT *' };
 
+      mockAgentsService.generateSchemaForGroupQuery.mockResolvedValue([
+        'users',
+      ]);
       mockTableService.getAgentGroupData.mockResolvedValue(mockGroupData);
       mockAgentsService.generateQueryForMultipleTables.mockResolvedValue(
         mockQueryRes,
       );
 
       const res = await controller.joinQuery('1', 'get users');
-      expect(tableService.getAgentGroupData).toHaveBeenCalledWith(1);
+      expect(tableService.getAgentGroupData).toHaveBeenCalledWith(1, [
+        'users',
+      ]);
       expect(agentsService.generateQueryForMultipleTables).toHaveBeenCalledWith(
         {
           tableData: mockGroupData,

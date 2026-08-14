@@ -15,6 +15,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Group } from '../groups/entities/group.entity';
 import { DatabaseService } from '../database/database.service';
 import { getDbSchema } from '../utils/utils.getDbSchema';
+import { z } from 'zod';
 @Injectable()
 export class AgentsService {
   constructor(
@@ -290,7 +291,7 @@ export class AgentsService {
       : [];
     const db =
       group[0] && this.databases
-        ? await this.databases.open(group[0].databasePath)
+        ? await this.databases.getKnex(group[0].databasePath)
         : undefined;
     const keys = db ? await getForeignKeys(db, tables) : [];
 
@@ -330,7 +331,7 @@ export class AgentsService {
     };
   }
 
-  async generateSchemaForGroup(groupId: number) {
+  async generateSchemaForGroupQuery(groupId: number, query: string) {
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
       select: ['id', 'sourceDatabaseName', 'sourceSchemaName'],
@@ -350,8 +351,27 @@ export class AgentsService {
       group.sourceDatabaseName,
       group.sourceSchemaName,
     );
+    console.log('[AgentsService] Raw schema:', rawSchema);
 
-    console.log(rawSchema);
-    return rawSchema;
+    const tableSelectionOutput = this.llmService
+      .getModel()
+      .withStructuredOutput(z.object({ tableNames: z.array(z.string()) }), {
+        method: 'jsonMode',
+      });
+    const prompt = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `Select the tables needed to answer the user's query. Return only JSON in this format:
+{{"tableNames":["table_name"]}}
+Use only table names present in the supplied schema.`,
+      ],
+      ['human', 'User query: {query}\nDatabase schema:\n{schema}'],
+    ]);
+
+    const parsed = await prompt.pipe(tableSelectionOutput).invoke({
+      query,
+      schema: JSON.stringify(rawSchema),
+    });
+    return [...new Set(parsed.tableNames)];
   }
 }

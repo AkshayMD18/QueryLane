@@ -29,18 +29,21 @@ export class AgentsController {
     @Body('groupId') groupId: string,
     @Body('query') query: string,
   ) {
+    const relevantTables = await this.agentsService.generateSchemaForGroupQuery(
+      Number(groupId),
+      query,
+    );
+    console.log('[AgentsController] Relevant table names:', relevantTables);
+
     const tablesData = await this.tableService.getAgentGroupData(
       Number(groupId),
+      relevantTables,
     );
+    console.log('[AgentsController] Filtered table data:', tablesData);
     return this.agentsService.generateQueryForMultipleTables({
       tableData: tablesData,
       query: query,
       groupId: Number(groupId),
     });
-  }
-
-  @Post('generate-schema')
-  async generateSchema(@Body('groupId') groupId: string) {
-    return this.agentsService.generateSchemaForGroup(Number(groupId));
   }
 }

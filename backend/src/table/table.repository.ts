@@ -1,33 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import { validateTableName } from 'src/helper';
 import { DatabaseService } from '../database/database.service';
+import schemaInspector from 'knex-schema-inspector';
 
 @Injectable()
 export class TableRepository {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly databases: DatabaseService,
-  ) {}
+  constructor(private readonly databases: DatabaseService) {}
 
   async fetchTableDetails(databasePath: string, tableName: string) {
     const validatedName = validateTableName(tableName);
 
-    const rawColumns = await this.databases.query(
-      databasePath,
-      `PRAGMA table_info("${validatedName}")`,
-    );
+    const db = await this.databases.getKnex(databasePath);
+    const columns = await schemaInspector(db).columnInfo(validatedName);
+    const rawColumns = columns.map((column, index) => ({
+      cid: index,
+      name: column.name,
+      type: column.data_type,
+      notnull: column.is_nullable === false ? 1 : 0,
+      dflt_value: column.default_value ?? null,
+      pk: column.is_primary_key ? 1 : 0,
+    }));
 
-    const sampleData = await this.databases.query(
-      databasePath,
-      `SELECT * FROM "${validatedName}" LIMIT 2`,
-    );
+    const sampleData = await db(validatedName).select('*').limit(2);
 
-    const countResult = await this.databases.query<{ count: string }>(
-      databasePath,
-      `SELECT COUNT(*) as count FROM "${validatedName}"`,
-    );
-    const rowCount = parseInt(countResult[0].count, 10);
+    const countResult = await db(validatedName)
+      .count<{ count: string }[]>('* as count')
+      .first();
+    const rowCount = Number(countResult?.count ?? 0);
 
     return {
       tableName,
@@ -46,16 +45,16 @@ export class TableRepository {
     const validatedName = validateTableName(tableName);
     const offset = page * limit;
 
-    const data = await this.databases.query(
-      databasePath,
-      `SELECT * FROM "${validatedName}" LIMIT ${limit} OFFSET ${offset}`,
-    );
+    const db = await this.databases.getKnex(databasePath);
+    const data = await db(validatedName)
+      .select('*')
+      .limit(limit)
+      .offset(offset);
 
-    const countResult = await this.databases.query<{ count: string }>(
-      databasePath,
-      `SELECT COUNT(*) as count FROM "${validatedName}"`,
-    );
-    const total = parseInt(countResult[0].count, 10);
+    const countResult = await db(validatedName)
+      .count<{ count: string }[]>('* as count')
+      .first();
+    const total = Number(countResult?.count ?? 0);
 
     return {
       data,

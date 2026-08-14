@@ -88,6 +88,38 @@ describe('TableService', () => {
     });
   });
 
+  describe('getAgentGroupData', () => {
+    it('returns only selected tables belonging to the group', async () => {
+      mockRepository.find.mockResolvedValue([
+        { tableName: 'users', groupId: 1 },
+        { tableName: 'orders', groupId: 1 },
+      ]);
+      mockGroupsService.getGroupById.mockResolvedValue({ databasePath: 'db' });
+      mockTableRepository.fetchTableDetails.mockResolvedValue({
+        rawColumns: [{ name: 'id', type: 'INTEGER' }],
+        sampleData: [],
+        rowCount: 1,
+      });
+
+      const result = await service.getAgentGroupData(1, [
+        'users',
+        'other_group_table',
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].tableName).toBe('users');
+      expect(tableRepo.fetchTableDetails).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws when no requested tables belong to the group', async () => {
+      mockRepository.find.mockResolvedValue([{ tableName: 'users', groupId: 1 }]);
+
+      await expect(service.getAgentGroupData(1, ['orders'])).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe('getColumns', () => {
     it('should return mapped column details', async () => {
       mockRepository.findOne.mockResolvedValue({ tableName: 'test_table' });

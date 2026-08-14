@@ -61,8 +61,10 @@ function close(db: Database) {
   );
 }
 function pgType(type: string) {
-  if (['smallint', 'integer', 'bigint', 'boolean'].includes(type))
-    return 'INTEGER';
+  if (['smallint', 'integer', 'bigint'].includes(type)) return 'INTEGER';
+  // SQLite has no native boolean storage class. Use TEXT so the values are
+  // not coerced to numeric 1/0 by NUMERIC/BOOLEAN affinity.
+  if (type.toLowerCase() === 'boolean') return 'TEXT';
   if (['real', 'double precision', 'numeric', 'decimal'].includes(type))
     return 'REAL';
   if (type === 'bytea') return 'BLOB';
@@ -71,7 +73,9 @@ function pgType(type: string) {
 function value(v: unknown, type: string): unknown {
   if (v === null || v === undefined) return null;
   if (Buffer.isBuffer(v)) return v;
-  if (type === 'boolean') return v ? 1 : 0;
+  if (type.toLowerCase() === 'boolean') {
+    return v === true || String(v).toLowerCase() === 'true' ? 'true' : 'false';
+  }
   if (typeof v === 'object') return JSON.stringify(v);
   if (typeof v === 'bigint') {
     const n = Number(v);

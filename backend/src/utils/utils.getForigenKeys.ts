@@ -1,15 +1,5 @@
-import { Database } from 'sqlite3';
-
-interface SQLiteForeignKeyRow {
-  id: number;
-  seq: number;
-  table: string; // The table that is referenced
-  from: string; // The column in the current table
-  to: string; // The column in the referenced table
-  on_update: string;
-  on_delete: string;
-  match: string;
-}
+import { Knex } from 'knex';
+import schemaInspector from 'knex-schema-inspector';
 
 export interface ForeignKeyInfo {
   fromTable: string;
@@ -18,29 +8,18 @@ export interface ForeignKeyInfo {
   referencesColumn: string;
 }
 
-export const getForeignKeys = (
-  db: Database,
+export const getForeignKeys = async (
+  db: Knex,
   tableNames: string[],
 ): Promise<ForeignKeyInfo[]> => {
-  const promises = tableNames.map((tableName) => {
-    return new Promise<ForeignKeyInfo[]>((resolve, reject) => {
-      db.all(
-        `PRAGMA foreign_key_list('${tableName}')`,
-        (err, rows: SQLiteForeignKeyRow[]) => {
-          if (err) {
-            return reject(err);
-          }
-          const mapped = (rows || []).map((fk) => ({
-            fromTable: tableName,
-            column: fk.from,
-            referencesTable: fk.table,
-            referencesColumn: fk.to,
-          }));
-          resolve(mapped);
-        },
-      );
-    });
-  });
-
-  return Promise.all(promises).then((results) => results.flat());
+  const inspector = schemaInspector(db);
+  const relationships = await Promise.all(
+    tableNames.map((tableName) => inspector.foreignKeys(tableName)),
+  );
+  return relationships.flat().map((foreignKey) => ({
+    fromTable: foreignKey.table,
+    column: foreignKey.column,
+    referencesTable: foreignKey.foreign_key_table,
+    referencesColumn: foreignKey.foreign_key_column,
+  }));
 };

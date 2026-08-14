@@ -3,12 +3,14 @@ import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Database } from 'sqlite3';
+import knex, { Knex } from 'knex';
 
 export const DATABASES_DIR = join(process.cwd(), 'databases');
 
 @Injectable()
 export class DatabaseService implements OnApplicationShutdown {
   private readonly connections = new Map<string, Database>();
+  private readonly knexConnections = new Map<string, Knex>();
   path(filename: string) {
     return join(DATABASES_DIR, filename);
   }
@@ -32,6 +34,18 @@ export class DatabaseService implements OnApplicationShutdown {
     this.connections.set(filename, db);
     return db;
   }
+  async getKnex(filename: string): Promise<Knex> {
+    const existing = this.knexConnections.get(filename);
+    if (existing) return existing;
+    await this.ensureDirectory();
+    const connection = knex({
+      client: 'sqlite3',
+      connection: { filename: this.path(filename) },
+      useNullAsDefault: true,
+    });
+    this.knexConnections.set(filename, connection);
+    return connection;
+  }
   async create(filename: string) {
     await this.ensureDirectory();
     const file = this.path(filename);
@@ -45,7 +59,14 @@ export class DatabaseService implements OnApplicationShutdown {
     );
     this.connections.delete(filename);
   }
+  async closeKnex(filename: string) {
+    const connection = this.knexConnections.get(filename);
+    if (!connection) return;
+    await connection.destroy();
+    this.knexConnections.delete(filename);
+  }
   async remove(filename: string) {
+    await this.closeKnex(filename);
     await this.close(filename);
     const file = this.path(filename);
     for (const target of [file, `${file}-wal`, `${file}-shm`])
@@ -70,6 +91,8 @@ export class DatabaseService implements OnApplicationShutdown {
     );
   }
   async onApplicationShutdown() {
+    for (const filename of [...this.knexConnections.keys()])
+      await this.closeKnex(filename);
     for (const filename of [...this.connections.keys()])
       await this.close(filename);
   }

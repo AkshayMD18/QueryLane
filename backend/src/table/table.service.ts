@@ -123,15 +123,27 @@ export class TableService {
     };
   }
 
-  async getAgentGroupData(groupId: number) {
+  async getAgentGroupData(groupId: number, tableNames?: string[]) {
     const tables = await this.tableRepository.find({ where: { groupId } });
     if (!tables || tables.length === 0) {
       throw new BadRequestException('No tables found for this group');
     }
 
+    const requestedTableNames = tableNames
+      ? [...new Set(tableNames)]
+      : tables.map((table) => table.tableName);
+    const requestedTableNameSet = new Set(requestedTableNames);
+    const selectedTables = tables.filter((table) =>
+      requestedTableNameSet.has(table.tableName),
+    );
+    if (selectedTables.length === 0) {
+      throw new BadRequestException('No tables found for this group');
+    }
+
+    const group = await this.groupsService.getGroupById(groupId);
+
     const tablesData: Array<tableData> = [];
-    for (const table of tables) {
-      const group = await this.groupsService.getGroupById(groupId);
+    for (const table of selectedTables) {
       const { rawColumns, sampleData, rowCount } =
         await this.tableRepo.fetchTableDetails(
           group?.databasePath ?? 'app.sqlite',
@@ -185,58 +197,66 @@ export class TableService {
       stream
         .pipe(csv())
         .on('data', (data) => results.push(data))
-        .on('end', async () => {
-          if (!results.length) {
-            return resolve({
-              columns: [],
-              columnTypes: {},
-              rowCount: 0,
-              sampleData: [],
-            });
-          }
+        .on('end', () => {
+          void (async () => {
+            if (!results.length) {
+              return resolve({
+                columns: [],
+                columnTypes: {},
+                rowCount: 0,
+                sampleData: [],
+              });
+            }
 
-          const columns = Object.keys(results[0]);
-          const columnTypes: Record<string, string> = {};
+            const columns = Object.keys(results[0]);
+            const columnTypes: Record<string, string> = {};
 
-          // Infer types
-          columns.forEach((col) => {
-            const types = results
-              .slice(0, 10)
-              .map((row) => this.inferType(row[col]));
-            columnTypes[col] = this.getMostFrequent(types);
-          });
-
-          try {
-            const tableName = name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-
-            const group = await this.groupsService.getGroupById(groupId);
-            await this.createDynamicTable(
-              group.databasePath,
-              tableName,
-              columns,
-              columnTypes,
-            );
-
-            await this.insertDataBatch(group.databasePath, tableName, results);
-
-            const newTable = this.tableRepository.create({
-              name,
-              tableName,
-              summary: `Contains ${results.length} rows and ${columns.length} columns.`,
-              groupId: groupId,
+            // Infer types
+            columns.forEach((col) => {
+              const types = results
+                .slice(0, 10)
+                .map((row) => this.inferType(row[col]));
+              columnTypes[col] = this.getMostFrequent(types);
             });
 
-            await this.tableRepository.save(newTable);
+            try {
+              const tableName = name
+                .replace(/[^a-zA-Z0-9]/g, '_')
+                .toLowerCase();
 
-            resolve({
-              columns,
-              columnTypes,
-              rowCount: results.length,
-              sampleData: results.slice(0, 5),
-            });
-          } catch (err) {
-            reject(err);
-          }
+              const group = await this.groupsService.getGroupById(groupId);
+              await this.createDynamicTable(
+                group.databasePath,
+                tableName,
+                columns,
+                columnTypes,
+              );
+
+              await this.insertDataBatch(
+                group.databasePath,
+                tableName,
+                results,
+              );
+
+              const newTable = this.tableRepository.create({
+                name,
+                tableName,
+                summary: `Contains ${results.length} rows and ${columns.length} columns.`,
+                groupId: groupId,
+              });
+
+              await this.tableRepository.save(newTable);
+
+              resolve({
+                columns,
+                columnTypes,
+                rowCount: results.length,
+                sampleData: results.slice(0, 5),
+              });
+            } catch (err) {
+              reject(err instanceof Error ? err : new Error(String(err)));
+            }
+          })().then(() => undefined, reject);
         })
         .on('error', reject);
     });
