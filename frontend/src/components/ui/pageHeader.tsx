@@ -15,12 +15,12 @@ export function PageHeader({
     className,
 }: PageHeaderProps) {
     return (
-        <div className={cn("py-6", className)}>
-            <div className="flex items-start justify-between gap-4">
+        <div className={cn("pb-6 pt-2 md:pb-8 md:pt-3", className)}>
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
 
                 {/* Left content */}
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight capitalize">
+                <div className="flex max-w-2xl flex-col gap-2">
+                    <h1 className="text-3xl font-bold tracking-tight capitalize md:text-4xl">
                         {heading}
                     </h1>
 
@@ -33,14 +33,14 @@ export function PageHeader({
 
                 {/* Right actions */}
                 {actions && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 md:justify-end">
                         {actions}
                     </div>
                 )}
             </div>
 
             {/* divider */}
-            <div className="h-px bg-border mt-4" />
+            <div className="mt-5 h-px bg-border md:mt-6" />
         </div>
     )
 }

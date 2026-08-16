@@ -4,8 +4,8 @@ export const Layout = () => {
     return (
         <div className="min-h-screen bg-background font-sans antialiased">
             {/* Simple Header */}
-            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="flex h-14 items-center px-4 md:px-6">
+            <header className="sticky top-0 z-50 w-full border-sidebar-border bg-sidebar/95 text-sidebar-foreground backdrop-blur supports-[backdrop-filter]:bg-sidebar/80">
+                <div className="mx-auto flex h-14 w-full max-w-7xl items-center px-4 md:px-6">
                     <Link to="/" className="flex items-center space-x-2">
                         <div className="bg-primary rounded-lg p-1">
                             <svg
@@ -30,7 +30,7 @@ export const Layout = () => {
             </header>
 
             {/* Main Content Area */}
-            <main className="py-6 px-4 md:px-6">
+            <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
                 <Outlet />
             </main>
         </div>

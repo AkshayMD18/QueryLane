@@ -59,12 +59,12 @@ const HomePage = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 md:space-y-8">
             <PageHeader
                 heading="Groups"
                 description="List of available data groups"
                 actions={
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Dialog open={open} onOpenChange={setOpen}>
                             <DialogTrigger render={<Button>Create Group</Button>} />
                             <DialogContent>
@@ -100,13 +100,13 @@ const HomePage = () => {
             />
 
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-6">
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton key={i} className="h-32 w-full rounded-xl" />
                     ))}
                 </div>
             ) : groups && groups.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-6">
                     {groups.map((group: Group) => (
                         <Card 
                             key={group.id} 

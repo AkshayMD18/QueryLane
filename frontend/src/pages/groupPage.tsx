@@ -80,12 +80,12 @@ export const GroupPage = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 md:space-y-8">
             <PageHeader
                 heading={group?.name || "Group Details"}
                 description={`Organized tables under group ID: ${groupId}`}
                 actions={
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 md:justify-end">
                         <QueryModal
                             trigger={<Button variant="outline">Query Group</Button>}
                             onExecute={handleQueryExecute}
@@ -106,7 +106,7 @@ export const GroupPage = () => {
             />
 
             <Tabs defaultValue="tables" className="w-full">
-                <TabsList className="mb-4">
+                <TabsList className="mb-5 max-w-full overflow-x-auto">
                     <TabsTrigger value="tables">Group Tables</TabsTrigger>
                     <TabsTrigger value="results">Query Results</TabsTrigger>
                 </TabsList>
@@ -133,7 +133,7 @@ export const GroupPage = () => {
                         <p className="text-muted-foreground">No tables available in this group. Upload a CSV to get started.</p>
                     )}
                 </TabsContent>
-                <TabsContent value="results">
+                <TabsContent value="results" className="space-y-4">
                     <QueryResults
                         queries={queries}
                         onDelete={(id) => deleteGroupQuery(id)}

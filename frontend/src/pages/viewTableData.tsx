@@ -60,7 +60,7 @@ export const ViewTable = () => {
     };
 
     return (
-        <div>
+        <div className="space-y-6 md:space-y-8">
             <PageHeader
                 heading={tableName || ""}
                 description="View table data"
@@ -77,7 +77,7 @@ export const ViewTable = () => {
 
             {columns && tableData ? (
                 <Tabs defaultValue="table" className="w-full">
-                    <TabsList className="mb-4">
+                <TabsList className="mb-5 max-w-full overflow-x-auto">
                         <TabsTrigger value="table">Table Data</TabsTrigger>
                         <TabsTrigger value="results">Query Results</TabsTrigger>
                     </TabsList>
@@ -94,7 +94,7 @@ export const ViewTable = () => {
                             setPage={setPage}
                         />
                     </TabsContent>
-                    <TabsContent value="results">
+                    <TabsContent value="results" className="space-y-4">
                         <QueryResults
                             queries={queries}
                             onDelete={(id) => deleteQuery(id)}
