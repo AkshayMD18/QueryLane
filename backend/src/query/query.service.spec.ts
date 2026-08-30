@@ -69,7 +69,11 @@ describe('QueryService', () => {
       mockDataSource.query.mockResolvedValue([{ id: 1 }]);
       mockQueryBuilder.execute.mockResolvedValue(undefined);
 
-      const result = await service.executeAndStoreQuery(mockQueryResponse, 1, 'get all users');
+      const result = await service.executeAndStoreQuery(
+        mockQueryResponse,
+        1,
+        'get all users',
+      );
       expect(result).toEqual([{ id: 1 }]);
       expect(tableService.getTableById).toHaveBeenCalledWith(1);
       expect(mockDataSource.query).toHaveBeenCalledWith('SELECT * FROM users');
@@ -87,7 +91,7 @@ describe('QueryService', () => {
       };
 
       await expect(
-        service.executeAndStoreQuery(mockQueryResponse, 1, 'get all users')
+        service.executeAndStoreQuery(mockQueryResponse, 1, 'get all users'),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -99,7 +103,10 @@ describe('QueryService', () => {
 
       const res = await service.getAllQueriesForTable(1);
       expect(res).toEqual(mockQueriesList);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('q.tableId = :tableId', { tableId: 1 });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'q.tableId = :tableId',
+        { tableId: 1 },
+      );
     });
   });
 
@@ -109,7 +116,9 @@ describe('QueryService', () => {
 
       await service.deleteQuery(1);
       expect(mockQueryBuilder.delete).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('id = :id', { id: 1 });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('id = :id', {
+        id: 1,
+      });
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
     });
   });

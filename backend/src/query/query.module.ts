@@ -6,9 +6,9 @@ import { Queries, GroupQuery } from './entities/query.entity';
 import { TableModule } from '../table/table.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Queries, GroupQuery]), TableModule],
-    controllers: [QueryController],
-    providers: [QueryService],
-    exports: [QueryService],
+  imports: [TypeOrmModule.forFeature([Queries, GroupQuery]), TableModule],
+  controllers: [QueryController],
+  providers: [QueryService],
+  exports: [QueryService],
 })
-export class QueryModule { }
+export class QueryModule {}

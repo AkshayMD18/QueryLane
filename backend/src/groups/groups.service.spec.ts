@@ -52,7 +52,9 @@ describe('GroupsService', () => {
       expect(mockDataSource.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.insert).toHaveBeenCalled();
       expect(mockQueryBuilder.into).toHaveBeenCalledWith('groups');
-      expect(mockQueryBuilder.values).toHaveBeenCalledWith({ name: 'Test Group' });
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        name: 'Test Group',
+      });
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
     });
 
@@ -83,7 +85,9 @@ describe('GroupsService', () => {
 
       const group = await service.getGroupById(1);
       expect(group).toEqual(result);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('g.id = :id', { id: 1 });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('g.id = :id', {
+        id: 1,
+      });
     });
   });
 });

@@ -1,4 +1,4 @@
-import { generateQuery, generateTasks, generateJoinQuery } from "@/api";
+import { generateQuery, generateTasks, generateJoinQuery, generateSchemaForGroup } from "@/api";
 import { useMutation } from "@tanstack/react-query";
 
 export const useGenerateQuery = () => {
@@ -18,3 +18,9 @@ export const useGenerateJoinQuery = () => {
         mutationFn: ({ groupId, query }: { groupId: number, query: string }) => generateJoinQuery(groupId, query),
     });
 }
+
+export const useGenerateSchemaForGroup = () => {
+    return useMutation({
+        mutationFn: (groupId: number) => generateSchemaForGroup(groupId),
+    });
+};

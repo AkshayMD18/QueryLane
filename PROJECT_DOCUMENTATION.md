@@ -1,79 +1,96 @@
-# Intelligent CSV Analysis & Query Platform
+# QueryLane
 
-## Project Title
-**Intelligent CSV Analysis & Query Platform (AI-Powered Tabular Data Assistant)**
+## Overview
 
----
+QueryLane is a full-stack, AI-powered tabular data assistant. It helps people analyze CSV files and PostgreSQL snapshots without writing SQL. Source data is brought into a local SQLite workspace, where users can inspect tables, receive suggested analyses, and ask questions in plain language.
 
-## Introduction
-The **Intelligent CSV Analysis & Query Platform** is a full-stack web application designed to democratize and accelerate data analysis. Rather than requiring users to write complex SQL statements or possess programming skills in Python/Pandas, this platform allows users to upload raw CSV files, automatically parses and structures them into a relational SQLite database, and offers an intuitive natural language interface. 
+The platform uses LangChain with OpenRouter for recommendations and natural-language-to-SQL generation. Generated SQL is validated before execution so the query path stays read-only.
 
-Powered by Large Language Models (LLMs) integrated via LangChain and OpenRouter, the application automatically analyzes data schemas to recommend relevant analytical tasks and translates natural language questions directly into optimized, secure SQL queries.
+## What the platform supports
 
----
+### Data sources
 
-## Objectives
-1. **Dynamic Data Ingestion**: Provide an effortless mechanism to upload CSV files, automatically infer correct data types (numbers, dates, booleans, strings), and generate matching database tables dynamically.
-2. **AI-Driven Automated Insights**: Leverage LLMs to understand table structures and sample data, automatically generating relevant query recommendations and analytical tasks.
-3. **Natural Language to SQL Translation**: Permit users to query their uploaded datasets in plain English, transforming these inputs into executable, valid SQLite commands.
-4. **Execution Safety and Validation**: Ensure robust sanitization, syntax validation, and permission checks so that only safe read-only (`SELECT`) operations are executed.
-5. **Interactive Visualization**: Display query outcomes using tabular views or visual representations categorized by data type (charts, single metrics, or raw data grids).
+- **CSV uploads:** files are streamed, parsed, type-inferred, and stored as SQLite tables in a selected group.
+- **PostgreSQL snapshots:** users select a database and schema, optionally exclude tables, then copy the selected PostgreSQL tables and data into a local SQLite database for that group.
 
----
+PostgreSQL is the only external database snapshot connector currently implemented. The application does not yet provide generic connectors for MySQL, SQL Server, Oracle, or other SQL databases.
 
-## Problem Statement
-Traditional data analysis is bottlenecked by the technical skills required to interact with databases and analytical tools. Business users, analysts, and project managers often need rapid answers from CSV files but are held back by:
-* The need to write complex SQL or write custom Python script boilerplate for basic tasks like grouping, filtering, or aggregating.
-* The lack of guidance on what questions a dataset can answer (users often do not know what patterns or insights are hidden in their data).
-* Security concerns with open-ended code interpreters or unchecked SQL injection risks when using AI-generated database commands.
+### Workspace organization
 
-There is a distinct need for a localized, lightweight, and secure tool that bridges the gap between natural language reasoning and structural SQL query execution over uploaded files.
+- Create groups to organize related tables.
+- Each group uses its own SQLite database file.
+- Add CSV tables to any group.
+- Browse paginated group tables and table metadata.
+- Delete groups along with their table metadata, saved group queries, and local database file.
 
----
+### AI-assisted analysis
 
-## Methodology/Approach
-The platform uses a modular decoupled architecture:
+- Generate up to three analysis recommendations for an individual table.
+- Turn a natural-language question into a safe SQLite `SELECT` query.
+- Ask questions about one table or multiple related tables in a group.
+- For PostgreSQL-backed groups, identify relevant source tables from the source schema before generating a multi-table query.
+- Classify results as a **value**, **chart**, or **table** for the frontend renderer.
+- Save, review, and delete query history at both table and group level.
 
-### 1. Data Processing & Storage (Backend ingestion)
-* **Stream Processing**: When a CSV is uploaded, a stream parser (`csv-parser`) reads the data on the fly to avoid high memory overhead.
-* **Schema Inference**: The backend samples the first several rows of data to detect types (`number`, `boolean`, `date`, `string`) and maps them to SQLite-compatible storage classes (`REAL`, `INTEGER`, `TEXT`).
-* **Dynamic Table Creation**: Generates tables matching the file name and executes dynamic DDL statements to configure the SQLite schema.
-* **Batch Ingestion**: Inserts data in optimized chunks of 500 rows to bypass SQLite parameter limits.
+## Architecture
 
-### 2. Cognitive Layer (AI Agents)
-* **Recommendation Agent**: Receives the dynamic schema structure, row count, and sample data. Constructs a LangChain prompt template requesting up to three meaningful business recommendations.
-* **Query Translation Agent**: Translates user natural language questions into SQLite queries. It evaluates the structure and flags the output format as either `value` (single aggregations), `chart` (group-by distributions), or `table` (raw subsets).
-* **Security & Verification**: Intercepts LLM outputs to strip markdown, formatting syntax, and execute validation checks (e.g., ensuring queries start with `SELECT`, block dangerous keywords like `DROP`, `UPDATE`, `DELETE`, and forbid multiple semicolon statements).
+### 1. Ingestion and local storage
 
-### 3. Client Interaction (Frontend dashboard)
-* **Data Hub**: Displays lists of uploaded tables.
-* **Interactive Query Console**: Houses a query modal where users can run custom natural language questions or trigger automatic analysis tasks.
-* **Tabular & Analytical View**: Renders raw data in a paginated grid alongside a tab dedicated to query history and structured AI results.
+**CSV ingestion**
 
----
+- `csv-parser` reads uploads as a stream to avoid loading the entire file into memory at once.
+- The service infers number, boolean, date, and string-like values, then creates a SQLite-compatible table.
+- Rows are inserted in batches to work within SQLite parameter limits.
 
-## Tools or Technologies Used
-* **Frontend**:
-  * **React** (v18) with **TypeScript** for interactive state management.
-  * **Vite** for fast, optimized building and hot module replacement.
-  * **shadcn/ui** & **Tailwind CSS** for clean, accessible, modern UI elements.
-  * **TanStack Query** (React Query) for caching and asynchronous state synchronization.
-* **Backend**:
-  * **NestJS** (TypeScript) for a structured, scalable module-based server application.
-  * **TypeORM** for robust database interaction, transaction safety, and entity configuration.
-  * **SQLite** (via TypeORM) as a lightweight, file-based relational database.
-  * **LangChain** (`@langchain/core`) to manage prompt flows and LLM pipelines.
-  * **OpenRouter API** to dynamically integrate model inference.
+**PostgreSQL snapshots**
 
----
+- The PostgreSQL connector reads the chosen schema, discovers tables and columns, and can omit user-selected tables.
+- PostgreSQL source types are normalized for snapshot metadata.
+- The selected schema’s data is copied into the group’s local SQLite database; queries then run on the local copy, not against the live PostgreSQL database.
 
-## Expected Outcome or Results
-* **Instant Ingestion**: Users can upload any standard CSV file and view its contents in a neat, paginated data grid within seconds.
-* **Self-Generating Reports**: Clicking "Generate Tasks" immediately presents the user with recommendations tailored specifically to their columns (e.g., trend analysis for date columns, numeric summaries, or grouping categories).
-* **Seamless Querying**: Typing `"Find the average value grouped by category"` generates and runs the correct SQL query in real-time, retrieving accurate calculations directly from the database.
-* **Safety First**: Any malicious or malformed database query attempt (e.g., attempting SQL injection or modification) is safely caught, logged, and blocked before hitting the database.
+**Group databases**
 
----
+- Each group has a separately named SQLite database under `backend/databases/`.
+- Database connections are managed by the backend’s `DatabaseService` and closed during application shutdown.
 
-## Conclusion
-The **Intelligent CSV Analysis & Query Platform** successfully merges classical relational database management with state-of-the-art Large Language Models. By streamlining the ingestion, schema generation, query formulation, and visualization steps into an integrated single interface, it empowers users of any technical skill level to draw direct, data-driven conclusions from their files safely and immediately.
+### 2. AI and query safety
+
+**Recommendation agent**
+
+The agent receives table name, row count, inferred schema, and sample rows, then returns up to three practical analysis recommendations.
+
+**Single-table query agent**
+
+The agent receives the user’s question plus the table schema and sample rows. It returns a structured response containing the SQLite query and its result type.
+
+**Multi-table query agent**
+
+For group queries, the application gathers table metadata and foreign-key relationships. PostgreSQL-backed groups can first use the source schema to identify the tables relevant to the question. The resulting SQLite query is executed against the group’s local snapshot.
+
+**Guardrails**
+
+- Only a single read-only `SELECT` statement is allowed.
+- Modifying statements and unsafe keywords are rejected.
+- Table and column references are validated against available metadata.
+- Queries are stored with their user question and result type for later review.
+
+## Frontend workflow
+
+1. Create a group.
+2. Upload CSV files to it, or import a PostgreSQL snapshot.
+3. Open a table to browse paginated data, inspect columns, generate recommendations, or ask a question.
+4. Open the group to query across its tables, upload more CSV files, view saved group-query results, or generate source-schema information for a PostgreSQL group.
+5. Review saved results as tables, charts, or single values and delete history entries when no longer needed.
+
+## Technology stack
+
+| Area | Technologies |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, React Router, TanStack Query, shadcn/ui, Tailwind CSS, Recharts |
+| Backend | NestJS, TypeScript, TypeORM, SQLite, Knex, `pg`, `csv-parser` |
+| AI | LangChain, OpenRouter, Zod structured output |
+| Query validation | `node-sql-parser` and application-level table/column validation |
+
+## Safety and scope
+
+The product is designed to make analysis more accessible, not to expose an unrestricted database console. PostgreSQL data is copied into a local SQLite snapshot before analysis. CSV uploads are also stored locally. Query execution is restricted to validated read-only SQL against those local SQLite workspaces.

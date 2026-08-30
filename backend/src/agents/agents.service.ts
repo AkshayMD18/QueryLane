@@ -1,22 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { LlmserviceService } from '../llmservice/llmservice.service';
-import { tableData, tablesData, analysisTasksSchema, generateQuerySchema, generateJoinQuerySchema } from 'src/types';
+import {
+  tableData,
+  tablesData,
+  analysisTasksSchema,
+  generateQuerySchema,
+  generateJoinQuerySchema,
+} from 'src/types';
 import { validateSelectQuery } from '../helper/helper.validateSelectQuery';
 import { getForeignKeys } from '../utils/utils.getForigenKeys';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { Group } from '../groups/entities/group.entity';
+import { DatabaseService } from '../database/database.service';
+import { z } from 'zod';
 @Injectable()
 export class AgentsService {
-    constructor(private readonly llmService: LlmserviceService,
-        private readonly dataSource: DataSource
-    ) { }
+  constructor(
+    private readonly llmService: LlmserviceService,
+    private readonly dataSource: DataSource,
+    @Optional()
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @Optional() private readonly databases?: DatabaseService,
+  ) {}
 
-    async generateAnalysisTasks(data: tableData) {
-        const promptTemplate = ChatPromptTemplate.fromMessages([
-            ["system", `You are a data analysis recommendation agent.
+  async generateAnalysisTasks(data: tableData) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `You are a data analysis recommendation agent.
                 Your job is to:
                 1. Understand the dataset
-                2. Generate a list of useful and practical analysis that can be performed on the dataset 
+                2. Generate a list of useful and practical analysis that can be performed on the dataset
 
                 STRICT RULES:
                 - Output MUST be a JSON array of strings
@@ -50,37 +67,43 @@ export class AgentsService {
                 - Single-value queries (aggregations)
                 - Ensure each query is meaningful and useful for analysis
                 - Avoid vague descriptions like "analyze data"
-                - Limit the number of queries to 3`
-            ],
-            ["human", `Analyze the following dataset details:
+                - Limit the number of queries to 3`,
+      ],
+      [
+        'human',
+        `Analyze the following dataset details:
                 - Table Name: {tableName}
                 - Total Rows: {rowCount}
                 - Columns and Types: {schema}
-                - Sample Data: {sampleData}`
-            ]
-        ]);
+                - Sample Data: {sampleData}`,
+      ],
+    ]);
 
-        const schemaStr = Object.entries(data.columnTypes)
-            .map(([col, type]) => `${col} (${type})`)
-            .join(', ');
+    const schemaStr = Object.entries(data.columnTypes)
+      .map(([col, type]) => `${col} (${type})`)
+      .join(', ');
 
-        const analysisOutput = this.llmService.getModel().withStructuredOutput(analysisTasksSchema, { method: 'jsonMode' });
+    const analysisOutput = this.llmService
+      .getModel()
+      .withStructuredOutput(analysisTasksSchema, { method: 'jsonMode' });
 
-        const chain = promptTemplate.pipe(analysisOutput);
+    const chain = promptTemplate.pipe(analysisOutput);
 
-        const parsed = await chain.invoke({
-            tableName: data.tableName,
-            rowCount: data.rowCount,
-            schema: schemaStr,
-            sampleData: JSON.stringify(data.sampleData, null, 2),
-        });
+    const parsed = await chain.invoke({
+      tableName: data.tableName,
+      rowCount: data.rowCount,
+      schema: schemaStr,
+      sampleData: JSON.stringify(data.sampleData, null, 2),
+    });
 
-        return parsed;
-    }
+    return parsed;
+  }
 
-    async generateQuery(data: tableData) {
-        const promptTemplate = ChatPromptTemplate.fromMessages([
-            ["system", `You are a SQLite generation agent.
+  async generateQuery(data: tableData) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `You are a SQLite generation agent.
                 Your job is to:
                 1. Understand the task given
                 2. Generate a well designed, optimized SQLite query based on the task
@@ -129,47 +152,56 @@ export class AgentsService {
                 - The returned value must be treated as a string (even if it is numeric)
                 - Example cases:
                     - "total number of users" → COUNT(...)
-                    - "highest grossing product name" → ORDER BY revenue DESC LIMIT 1`
-            ],
-            ["human", `Generate a query for:
+                    - "highest grossing product name" → ORDER BY revenue DESC LIMIT 1`,
+      ],
+      [
+        'human',
+        `Generate a query for:
                 Task/Query: {query}
                 Dataset Details:
                 - Table Name: {tableName}
                 - Total Rows: {rowCount}
                 - Columns and Types: {schema}
-                - Sample Data: {sampleData}`
-            ]
-        ]);
+                - Sample Data: {sampleData}`,
+      ],
+    ]);
 
-        const schemaStr = Object.entries(data.columnTypes)
-            .map(([col, type]) => `${col} (${type})`)
-            .join(', ');
+    const schemaStr = Object.entries(data.columnTypes)
+      .map(([col, type]) => `${col} (${type})`)
+      .join(', ');
 
-        const queryOutput = this.llmService.getModel().withStructuredOutput(generateQuerySchema, { method: 'jsonMode' });
+    const queryOutput = this.llmService
+      .getModel()
+      .withStructuredOutput(generateQuerySchema, { method: 'jsonMode' });
 
-        const chain = promptTemplate.pipe(queryOutput);
+    const chain = promptTemplate.pipe(queryOutput);
 
-        const parsed = await chain.invoke({
-            query: data.query,
-            tableName: data.tableName,
-            rowCount: data.rowCount,
-            schema: schemaStr,
-            sampleData: JSON.stringify(data.sampleData),
-        });
+    const parsed = await chain.invoke({
+      query: data.query,
+      tableName: data.tableName,
+      rowCount: data.rowCount,
+      schema: schemaStr,
+      sampleData: JSON.stringify(data.sampleData),
+    });
 
-        const query = validateSelectQuery(parsed.SQLiteQuery, parsed.tableName, parsed.columns);
+    const query = validateSelectQuery(
+      parsed.SQLiteQuery,
+      parsed.tableName,
+      parsed.columns,
+    );
 
-        return {
-            userQuery: data.query,
-            SQLiteQuery: query,
-            queryType: parsed.queryType
-        };
-    }
+    return {
+      userQuery: data.query,
+      SQLiteQuery: query,
+      queryType: parsed.queryType,
+    };
+  }
 
-    async generateQueryForMultipleTables(data: tablesData) {
-        const promptTemplate = ChatPromptTemplate.fromMessages([
-            ["system",
-                `You are a SQLite query generation agent.
+  async generateQueryForMultipleTables(data: tablesData) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `You are a SQLite query generation agent.
 
                 Your job is to:
                 1. Understand the user's request
@@ -239,46 +271,106 @@ export class AgentsService {
                         }}
                     ],
                     "queryType": "table | chart | value"
-                }}`
-            ],
-            ["human",
-                `Task:
+                }}`,
+      ],
+      [
+        'human',
+        `Task:
                 {query}
                 Database Metadata:
-                {databaseMetadata}`
-            ]
-        ]);
-        const tables = data.tableData.map((table) => table.tableName);
-        const db = (this.dataSource.driver as any).databaseConnection;
-        const keys = await getForeignKeys(db, tables);
+                {databaseMetadata}`,
+      ],
+    ]);
+    const tables = data.tableData.map((table) => table.tableName);
+    const group = data.groupId
+      ? await this.dataSource.query<{ databasePath: string }>(
+          'SELECT databasePath FROM groups WHERE id = ?',
+          [data.groupId],
+        )
+      : [];
+    const db =
+      group[0] && this.databases
+        ? await this.databases.getKnex(group[0].databasePath)
+        : undefined;
+    const keys = db ? await getForeignKeys(db, tables) : [];
 
-        const schemaStr = data.tableData
-            .map(
+    const queryOutput = this.llmService
+      .getModel()
+      .withStructuredOutput(generateJoinQuerySchema, { method: 'jsonMode' });
+    const chain = promptTemplate.pipe(queryOutput);
+    const parsed = await chain.invoke({
+      query: data.query,
+      databaseMetadata:
+        `
+            ${data.tableData
+              .map(
                 (table) =>
-                    `${table.tableName}: ${Object.entries(table.columnTypes)
-                        .map(([col, type]) => `${col} (${type})`)
-                        .join(', ')}`
-            )
-            .join('\n');
+                  `Table: ${table.tableName}\n` +
+                  `Total Rows: ${table.rowCount}\n` +
+                  `Columns and Types: ${Object.entries(table.columnTypes)
+                    .map(([col, type]) => `${col} (${type})`)
+                    .join(', ')}\n` +
+                  `Sample Data: ${JSON.stringify(table.sampleData)}`,
+              )
+              .join('\n\n')}
+            Foreign Keys:\n` + JSON.stringify(keys, null, 2),
+    });
 
-        const queryOutput = this.llmService.getModel().withStructuredOutput(generateJoinQuerySchema, { method: 'jsonMode' });
-        const chain = promptTemplate.pipe(queryOutput);
-        const parsed = await chain.invoke({
-            query: data.query,
-            databaseMetadata: `
-            ${data.tableData.map((table) =>
-                `Table: ${table.tableName}\n` +
-                `Total Rows: ${table.rowCount}\n` +
-                `Columns and Types: ${schemaStr}` +
-                `Sample Data: ${JSON.stringify(table.sampleData)}`
-            ).join('\n\n')}
-            Foreign Keys:\n` + JSON.stringify(keys, null, 2)
-        });
+    return {
+      userQuery: data.query,
+      SQLiteQuery: parsed.SQLiteQuery,
+      queryType: parsed.queryType,
+    };
+  }
 
-        return {
-            userQuery: data.query,
-            SQLiteQuery: parsed.SQLiteQuery,
-            queryType: parsed.queryType
-        };
+  async generateSchemaForGroupQuery(groupId: number, query: string) {
+    const group = await this.groupRepository.findOne({
+      where: { id: groupId },
+      select: ['id', 'databasePath'],
+    });
+
+    if (!group) {
+      throw new BadRequestException('Group not found');
     }
+
+    if (!group.databasePath || !this.databases) {
+      throw new BadRequestException(
+        'This group does not have a local SQLite database',
+      );
+    }
+
+    const tableRows = await this.databases.query<{ name: string }>(
+      group.databasePath,
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
+    );
+    const tableNames = tableRows.map(({ name }) => name);
+    const db = await this.databases.getKnex(group.databasePath);
+    const relationships = await getForeignKeys(db, tableNames);
+    const rawSchema = {
+      tables: tableNames,
+      relationships,
+    };
+    console.log('[AgentsService] Raw schema:', rawSchema);
+
+    const tableSelectionOutput = this.llmService
+      .getModel()
+      .withStructuredOutput(z.object({ tableNames: z.array(z.string()) }), {
+        method: 'jsonMode',
+      });
+    const prompt = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `Select the tables needed to answer the user's query. Return only JSON in this format:
+{{"tableNames":["table_name"]}}
+Use only table names present in the supplied schema.`,
+      ],
+      ['human', 'User query: {query}\nDatabase schema:\n{schema}'],
+    ]);
+
+    const parsed = await prompt.pipe(tableSelectionOutput).invoke({
+      query,
+      schema: JSON.stringify(rawSchema),
+    });
+    return [...new Set(parsed.tableNames)];
+  }
 }

@@ -12,6 +12,7 @@ describe('AgentsController', () => {
     generateAnalysisTasks: jest.fn(),
     generateQuery: jest.fn(),
     generateQueryForMultipleTables: jest.fn(),
+    generateSchemaForGroupQuery: jest.fn(),
   };
 
   const mockTableService = {
@@ -57,7 +58,9 @@ describe('AgentsController', () => {
 
       const res = await controller.generateTasks('users');
       expect(tableService.getAgentTableData).toHaveBeenCalledWith('users');
-      expect(agentsService.generateAnalysisTasks).toHaveBeenCalledWith(mockTableData);
+      expect(agentsService.generateAnalysisTasks).toHaveBeenCalledWith(
+        mockTableData,
+      );
       expect(res).toEqual(mockTasks);
     });
   });
@@ -72,7 +75,10 @@ describe('AgentsController', () => {
 
       const res = await controller.query('users', 'get users');
       expect(tableService.getAgentTableData).toHaveBeenCalledWith('users');
-      expect(agentsService.generateQuery).toHaveBeenCalledWith({ ...mockTableData, query: 'get users' });
+      expect(agentsService.generateQuery).toHaveBeenCalledWith({
+        ...mockTableData,
+        query: 'get users',
+      });
       expect(res).toEqual(mockQueryRes);
     });
   });
@@ -82,15 +88,25 @@ describe('AgentsController', () => {
       const mockGroupData = [{ tableName: 'users' }];
       const mockQueryRes = { SQLiteQuery: 'SELECT *' };
 
+      mockAgentsService.generateSchemaForGroupQuery.mockResolvedValue([
+        'users',
+      ]);
       mockTableService.getAgentGroupData.mockResolvedValue(mockGroupData);
-      mockAgentsService.generateQueryForMultipleTables.mockResolvedValue(mockQueryRes);
+      mockAgentsService.generateQueryForMultipleTables.mockResolvedValue(
+        mockQueryRes,
+      );
 
       const res = await controller.joinQuery('1', 'get users');
-      expect(tableService.getAgentGroupData).toHaveBeenCalledWith(1);
-      expect(agentsService.generateQueryForMultipleTables).toHaveBeenCalledWith({
-        tableData: mockGroupData,
-        query: 'get users',
-      });
+      expect(tableService.getAgentGroupData).toHaveBeenCalledWith(1, [
+        'users',
+      ]);
+      expect(agentsService.generateQueryForMultipleTables).toHaveBeenCalledWith(
+        {
+          tableData: mockGroupData,
+          query: 'get users',
+          groupId: 1,
+        },
+      );
       expect(res).toEqual(mockQueryRes);
     });
   });

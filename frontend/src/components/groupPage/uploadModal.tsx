@@ -28,7 +28,7 @@ export const UploadModal = ({ onUpload, isUploading }: { onUpload: (file: File, 
             setOpen(false);
             setFile(null);
             setName("");
-        } catch (error) {
+        } catch {
             // Error handling is managed by the caller/hook
         }
     };

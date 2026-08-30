@@ -1,6 +1,6 @@
 export interface DataTableProps {
-    columns: any[];
-    tableData: any[];
+    columns: TableColumn[];
+    tableData: import('./query').QueryRow[];
     tableName: string | undefined;
 }
 
@@ -10,6 +10,8 @@ export interface QueryModalProps {
     onGenerateTasks?: () => void
     isQueryLoading?: boolean;
     isGeneratingTasks?: boolean;
-    tasks?: { recommendation: string[] } | any[];
+    tasks?: { recommendation: string[] } | unknown[];
 
 }
+
+export type TableColumn = { name: string };

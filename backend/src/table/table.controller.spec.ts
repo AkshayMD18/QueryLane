@@ -41,7 +41,11 @@ describe('TableController', () => {
       const mockResult = { data: [], total: 0, page: 1, limit: 10 };
       mockTableService.getAllTables.mockResolvedValue(mockResult);
 
-      const res = await controller.getTables({ page: 1, limit: 10, groupId: 1 });
+      const res = await controller.getTables({
+        page: 1,
+        limit: 10,
+        groupId: 1,
+      });
       expect(service.getAllTables).toHaveBeenCalledWith(1, 10, 1);
       expect(res).toEqual(mockResult);
     });
@@ -63,7 +67,10 @@ describe('TableController', () => {
       const mockData = { data: [], total: 0, page: 0, limit: 20 };
       mockTableService.getTableData.mockResolvedValue(mockData);
 
-      const res = await controller.getTableData('t_name', { page: 0, limit: 20 });
+      const res = await controller.getTableData('t_name', {
+        page: 0,
+        limit: 20,
+      });
       expect(service.getTableData).toHaveBeenCalledWith('t_name', 0, 20);
       expect(res).toEqual(mockData);
     });

@@ -7,4 +7,13 @@ export class Group {
 
   @Column()
   name: string;
+
+  @Column({ nullable: true })
+  databasePath: string;
+
+  @Column({ nullable: true })
+  sourceDatabaseName: string;
+
+  @Column({ nullable: true })
+  sourceSchemaName: string;
 }

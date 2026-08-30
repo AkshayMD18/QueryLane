@@ -1,31 +1,37 @@
-import { IsNotEmpty, IsString, IsEnum, ValidateNested, IsNumber } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  ValidateNested,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryResponseDto {
-    @IsNotEmpty()
-    @IsString()
-    SQLiteQuery: string;
+  @IsNotEmpty()
+  @IsString()
+  SQLiteQuery: string;
 
-    @IsNotEmpty()
-    @IsString()
-    tableName: string;
+  @IsNotEmpty()
+  @IsString()
+  tableName: string;
 
-    @IsNotEmpty()
-    @IsEnum(['table', 'chart', 'value'])
-    queryType: 'table' | 'chart' | 'value';
+  @IsNotEmpty()
+  @IsEnum(['table', 'chart', 'value'])
+  queryType: 'table' | 'chart' | 'value';
 }
 
 export class ExecuteQueryDto {
-    @IsNotEmpty()
-    @ValidateNested()
-    @Type(() => QueryResponseDto)
-    query: QueryResponseDto;
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => QueryResponseDto)
+  query: QueryResponseDto;
 
-    @IsNotEmpty()
-    @IsNumber()
-    tableId: number;
+  @IsNotEmpty()
+  @IsNumber()
+  tableId: number;
 
-    @IsNotEmpty()
-    @IsString()
-    userQuery: string;
+  @IsNotEmpty()
+  @IsString()
+  userQuery: string;
 }

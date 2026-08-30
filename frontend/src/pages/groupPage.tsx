@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGroupById, useTables, useUploadTable, useGenerateJoinQuery, useGetAllQueriesForGroup, useExecuteAndStoreGroupQuery, useDeleteGroupQuery } from "@/hook";
+import { useGroupById, useTables, useUploadTable, useGenerateJoinQuery, useGenerateSchemaForGroup, useGetAllQueriesForGroup, useExecuteAndStoreGroupQuery, useDeleteGroupQuery } from "@/hook";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/pageHeader";
 import { PaginationCustom } from "@/components/viewTableData/paginationCustom";
@@ -18,6 +18,7 @@ export const GroupPage = () => {
     const { data: response, isLoading: isTablesLoading } = useTables(page + 1, limit, Number(groupId));
     const { mutateAsync: uploadTable, isPending: isUploading } = useUploadTable();
     const { mutateAsync: generateJoinQuery, isPending: isGeneratingJoinQuery } = useGenerateJoinQuery();
+    const { mutateAsync: generateSchemaForGroup, isPending: isGeneratingSchema } = useGenerateSchemaForGroup();
     const { data: queries } = useGetAllQueriesForGroup(Number(groupId));
     const { mutateAsync: executeAndStoreGroupQuery, isPending: isExecutingGroupQuery } = useExecuteAndStoreGroupQuery();
     const { mutateAsync: deleteGroupQuery } = useDeleteGroupQuery();
@@ -53,6 +54,16 @@ export const GroupPage = () => {
         console.log("Generate group tasks");
     };
 
+    const handleGenerateSchema = async () => {
+        try {
+            const schema = await generateSchemaForGroup(Number(groupId));
+            console.log("Generated database schema:", schema);
+        } catch (error) {
+            console.error("Schema generation failed:", error);
+        }
+    };
+
+
     const tables = response?.data;
     const total = response?.total || 0;
     const totalPages = Math.ceil(total / limit);
@@ -69,12 +80,12 @@ export const GroupPage = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 md:space-y-8">
             <PageHeader
                 heading={group?.name || "Group Details"}
                 description={`Organized tables under group ID: ${groupId}`}
                 actions={
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 md:justify-end">
                         <QueryModal
                             trigger={<Button variant="outline">Query Group</Button>}
                             onExecute={handleQueryExecute}
@@ -82,13 +93,20 @@ export const GroupPage = () => {
                             isQueryLoading={isGeneratingJoinQuery || isExecutingGroupQuery}
                             isGeneratingTasks={false}
                         />
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateSchema}
+                            disabled={isGeneratingSchema}
+                        >
+                            {isGeneratingSchema ? "Generating Schema..." : "Generate Schema"}
+                        </Button>
                         <UploadModal onUpload={handleUpload} isUploading={isUploading} />
                     </div>
                 }
             />
 
             <Tabs defaultValue="tables" className="w-full">
-                <TabsList className="mb-4">
+                <TabsList className="mb-5 max-w-full overflow-hidden">
                     <TabsTrigger value="tables">Group Tables</TabsTrigger>
                     <TabsTrigger value="results">Query Results</TabsTrigger>
                 </TabsList>
@@ -115,7 +133,7 @@ export const GroupPage = () => {
                         <p className="text-muted-foreground">No tables available in this group. Upload a CSV to get started.</p>
                     )}
                 </TabsContent>
-                <TabsContent value="results">
+                <TabsContent value="results" className="space-y-4">
                     <QueryResults
                         queries={queries}
                         onDelete={(id) => deleteGroupQuery(id)}
@@ -127,4 +145,3 @@ export const GroupPage = () => {
 };
 
 export default GroupPage;
-
