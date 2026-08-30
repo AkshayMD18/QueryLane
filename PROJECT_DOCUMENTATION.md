@@ -11,7 +11,7 @@ The platform uses LangChain with OpenRouter for recommendations and natural-lang
 ### Data sources
 
 - **CSV uploads:** files are streamed, parsed, type-inferred, and stored as SQLite tables in a selected group.
-- **PostgreSQL snapshots:** users select a database and schema, optionally exclude tables, then copy the selected PostgreSQL tables and data into a local SQLite database for that group.
+- **PostgreSQL snapshots:** users enter the PostgreSQL host, port, username, password, database, and schema in the import modal. They may also provide a connection string and exclude tables. The selected data is copied into a local SQLite database for that group.
 
 PostgreSQL is the only external database snapshot connector currently implemented. The application does not yet provide generic connectors for MySQL, SQL Server, Oracle, or other SQL databases.
 
@@ -28,7 +28,7 @@ PostgreSQL is the only external database snapshot connector currently implemente
 - Generate up to three analysis recommendations for an individual table.
 - Turn a natural-language question into a safe SQLite `SELECT` query.
 - Ask questions about one table or multiple related tables in a group.
-- For PostgreSQL-backed groups, identify relevant source tables from the source schema before generating a multi-table query.
+- For groups with a local SQLite snapshot, identify relevant tables from a compact list of table names and foreign-key relationships before generating a multi-table query. The full schema and sample data are passed only for selected tables.
 - Classify results as a **value**, **chart**, or **table** for the frontend renderer.
 - Save, review, and delete query history at both table and group level.
 
@@ -44,7 +44,7 @@ PostgreSQL is the only external database snapshot connector currently implemente
 
 **PostgreSQL snapshots**
 
-- The PostgreSQL connector reads the chosen schema, discovers tables and columns, and can omit user-selected tables.
+- The PostgreSQL connector reads the chosen schema using connection details supplied by the frontend, discovers tables and columns, and can omit user-selected tables.
 - PostgreSQL source types are normalized for snapshot metadata.
 - The selected schema’s data is copied into the group’s local SQLite database; queries then run on the local copy, not against the live PostgreSQL database.
 
@@ -79,7 +79,7 @@ For group queries, the application gathers table metadata and foreign-key relati
 1. Create a group.
 2. Upload CSV files to it, or import a PostgreSQL snapshot.
 3. Open a table to browse paginated data, inspect columns, generate recommendations, or ask a question.
-4. Open the group to query across its tables, upload more CSV files, view saved group-query results, or generate source-schema information for a PostgreSQL group.
+4. Open the group to query across its tables, upload more CSV files, view saved group-query results, or generate schema information from the local SQLite snapshot.
 5. Review saved results as tables, charts, or single values and delete history entries when no longer needed.
 
 ## Technology stack

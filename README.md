@@ -42,21 +42,10 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Create `backend/.env` for the AI provider:
 
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key_here
-
-# Required only for PostgreSQL snapshots
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_postgres_password
-POSTGRES_DATABASE=your_database_name
-POSTGRES_SCHEMA=public
-
-# Optional comma-separated default exclusions
-POSTGRES_EXCLUDED_TABLES=
 ```
 
 Start the API:
