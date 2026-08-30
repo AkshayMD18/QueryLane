@@ -5,7 +5,7 @@ export const Layout = () => {
         <div className="min-h-screen bg-background font-sans antialiased">
             {/* Simple Header */}
             <header className="sticky top-0 z-50 w-full border-sidebar-border bg-sidebar/95 text-sidebar-foreground backdrop-blur supports-[backdrop-filter]:bg-sidebar/80">
-                <div className="mx-auto flex h-14 w-full max-w-7xl items-center px-4 md:px-6">
+                <div className="flex h-14 w-full items-center px-4 md:px-6">
                     <Link to="/" className="flex items-center space-x-2">
                         <div className="bg-primary rounded-lg p-1">
                             <svg
@@ -23,14 +23,14 @@ export const Layout = () => {
                             </svg>
                         </div>
                         <span className="text-lg font-bold tracking-tight">
-                            CsvInsight
+                            QueryLane
                         </span>
                     </Link>
                 </div>
             </header>
 
             {/* Main Content Area */}
-            <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
+            <main className="w-full px-3 py-5 md:px-5 md:py-7">
                 <Outlet />
             </main>
         </div>

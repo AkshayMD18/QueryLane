@@ -14,7 +14,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Group } from '../groups/entities/group.entity';
 import { DatabaseService } from '../database/database.service';
-import { getDbSchema } from '../utils/utils.getDbSchema';
 import { z } from 'zod';
 @Injectable()
 export class AgentsService {
@@ -295,15 +294,6 @@ export class AgentsService {
         : undefined;
     const keys = db ? await getForeignKeys(db, tables) : [];
 
-    const schemaStr = data.tableData
-      .map(
-        (table) =>
-          `${table.tableName}: ${Object.entries(table.columnTypes)
-            .map(([col, type]) => `${col} (${type})`)
-            .join(', ')}`,
-      )
-      .join('\n');
-
     const queryOutput = this.llmService
       .getModel()
       .withStructuredOutput(generateJoinQuerySchema, { method: 'jsonMode' });
@@ -317,7 +307,9 @@ export class AgentsService {
                 (table) =>
                   `Table: ${table.tableName}\n` +
                   `Total Rows: ${table.rowCount}\n` +
-                  `Columns and Types: ${schemaStr}` +
+                  `Columns and Types: ${Object.entries(table.columnTypes)
+                    .map(([col, type]) => `${col} (${type})`)
+                    .join(', ')}\n` +
                   `Sample Data: ${JSON.stringify(table.sampleData)}`,
               )
               .join('\n\n')}
@@ -334,23 +326,30 @@ export class AgentsService {
   async generateSchemaForGroupQuery(groupId: number, query: string) {
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
-      select: ['id', 'sourceDatabaseName', 'sourceSchemaName'],
+      select: ['id', 'databasePath'],
     });
 
     if (!group) {
       throw new BadRequestException('Group not found');
     }
 
-    if (!group.sourceDatabaseName || !group.sourceSchemaName) {
+    if (!group.databasePath || !this.databases) {
       throw new BadRequestException(
-        'This group does not have PostgreSQL source connection details',
+        'This group does not have a local SQLite database',
       );
     }
 
-    const rawSchema = await getDbSchema(
-      group.sourceDatabaseName,
-      group.sourceSchemaName,
+    const tableRows = await this.databases.query<{ name: string }>(
+      group.databasePath,
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
     );
+    const tableNames = tableRows.map(({ name }) => name);
+    const db = await this.databases.getKnex(group.databasePath);
+    const relationships = await getForeignKeys(db, tableNames);
+    const rawSchema = {
+      tables: tableNames,
+      relationships,
+    };
     console.log('[AgentsService] Raw schema:', rawSchema);
 
     const tableSelectionOutput = this.llmService

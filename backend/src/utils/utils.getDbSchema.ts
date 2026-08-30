@@ -1,14 +1,9 @@
 import knex from 'knex';
 import schemaInspector from 'knex-schema-inspector';
-import { getPostgresConfig } from './utils.dbConnector';
+import type { PostgresConnection } from './utils.dbConnector';
 
-export const getDbSchema = async (databaseName: string, schemaName: string) => {
-  const config = getPostgresConfig();
-  if (!config.password || config.password === 'your_postgres_password') {
-    throw new Error(
-      'POSTGRES_PASSWORD is missing or still set to the placeholder value. Set it in backend/.env and restart the server.',
-    );
-  }
+export const getDbSchema = async (config: PostgresConnection, schemaName: string) => {
+  const databaseName = config.database;
   const db = knex({
     client: 'pg',
     connection: {

@@ -1,9 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import {
-  getPostgresConfig,
-  postgresDbConnector,
-} from '../utils/utils.dbConnector';
+import { postgresDbConnector, PostgresConnection } from '../utils/utils.dbConnector';
 import { copyPostgresToSqlite } from '../utils/utils.copyDb';
 import { DatabaseService } from '../database/database.service';
 
@@ -136,17 +133,18 @@ export class GroupsService {
   }
 
   async getSnapshot(
-    databaseName: string,
+    connection: PostgresConnection,
     schemaName: string,
     excludedTables: string[] = [],
   ) {
+    const databaseName = connection.database;
     console.log('[postgres-snapshot] Request options', {
       databaseName,
       schemaName,
       excludedTables,
     });
     const snapshot = await postgresDbConnector.createSnapshot(
-      databaseName,
+      connection,
       schemaName,
       excludedTables,
     );
@@ -157,8 +155,7 @@ export class GroupsService {
     // Keep the migration connection aligned with PostgresDbConnector.
     // databaseName is supplied separately below because the connection URL
     // intentionally does not hardcode the selected database.
-    const postgresConfig = getPostgresConfig();
-    const connectionString = `postgresql://${encodeURIComponent(postgresConfig.user)}:${encodeURIComponent(postgresConfig.password)}@${postgresConfig.host}:${postgresConfig.port}/${encodeURIComponent(databaseName)}`;
+    const connectionString = connection.connectionString ?? `postgresql://${encodeURIComponent(connection.user)}:${encodeURIComponent(connection.password)}@${connection.host}:${connection.port}/${encodeURIComponent(databaseName)}`;
     console.log('[postgres-snapshot] Connector returned tables', {
       count: snapshot.tables.length,
       tables: snapshot.tables.map((table) => table.tableName),

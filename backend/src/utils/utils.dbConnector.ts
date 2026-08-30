@@ -1,33 +1,14 @@
-import 'dotenv/config';
 import knex, { Knex } from 'knex';
 import schemaInspector from 'knex-schema-inspector';
 
-const POSTGRES_CONFIG = {
-  host: process.env.POSTGRES_HOST ?? 'localhost',
-  port: Number(process.env.POSTGRES_PORT ?? 5432),
-  user: process.env.POSTGRES_USER ?? 'postgres',
-  password: String(process.env.POSTGRES_PASSWORD ?? ''),
-  database: process.env.POSTGRES_DATABASE ?? '',
+export type PostgresConnection = {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  connectionString?: string;
 };
-
-const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA ?? 'public';
-const EXCLUDED_TABLES = (process.env.POSTGRES_EXCLUDED_TABLES ?? '')
-  .split(',')
-  .map((table) => table.trim())
-  .filter(Boolean);
-
-export const getPostgresConfig = () => ({ ...POSTGRES_CONFIG });
-
-function validatePostgresConfig() {
-  if (
-    !POSTGRES_CONFIG.password ||
-    POSTGRES_CONFIG.password === 'your_postgres_password'
-  ) {
-    throw new Error(
-      'POSTGRES_PASSWORD is missing or still set to the placeholder value. Set it in backend/.env and restart the server.',
-    );
-  }
-}
 
 export type SnapshotColumn = {
   name: string;
@@ -52,11 +33,16 @@ export type PostgresSnapshot = {
 
 export class PostgresDbConnector {
   async createSnapshot(
-    databaseName = POSTGRES_CONFIG.database,
-    schemaName = POSTGRES_SCHEMA,
-    excludedTables = EXCLUDED_TABLES,
+    connection: PostgresConnection,
+    schemaName: string,
+    excludedTables: string[] = [],
   ): Promise<PostgresSnapshot> {
-    validatePostgresConfig();
+    if (!connection.password || !connection.database || !connection.user) {
+      throw new Error(
+        'PostgreSQL host, database, user, and password are required',
+      );
+    }
+    const databaseName = connection.database;
     this.validateIdentifier(schemaName, 'schema');
 
     const excluded = new Set(
@@ -68,7 +54,7 @@ export class PostgresDbConnector {
 
     const db = knex({
       client: 'pg',
-      connection: { ...POSTGRES_CONFIG, database: databaseName },
+      connection: connection.connectionString ?? connection,
     });
 
     try {

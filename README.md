@@ -1,92 +1,103 @@
-# Intelligent CSV Analysis & Query Platform
+# QueryLane
 
-An AI-powered tabular data assistant designed to upload CSV files, automatically structure them into an SQLite database, and run natural language queries translated to SQL.
+QueryLane is an AI-powered tabular data assistant for people who need answers from data without writing SQL. It supports CSV uploads and PostgreSQL snapshots, stores imported data in local SQLite workspaces, and turns plain-language questions into guarded read-only queries.
 
-For full architecture and design details, see [PROJECT_DOCUMENTATION.md](file:///c:/VSC/MyProjests/CsvAnalysis/PROJECT_DOCUMENTATION.md).
+For architecture and feature details, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md).
 
----
+## Features
 
-## 📂 Project Structure
+- Create groups for related datasets.
+- Upload CSV files to a group with inferred SQLite-compatible column types.
+- Import a PostgreSQL database schema into a group as a local SQLite snapshot, with optional table exclusions.
+- Browse paginated table data and column metadata.
+- Generate AI analysis suggestions for an individual table.
+- Ask natural-language questions about one table or multiple tables in a group.
+- Render results as a value, chart, or data table.
+- Save, browse, and delete table-level and group-level query history.
+- Run only validated, read-only SQL against local SQLite data.
 
-- `backend/`: NestJS + TypeORM + SQLite + LangChain application.
-- `frontend/`: React + Vite + TypeScript + Tailwind CSS application.
+> PostgreSQL is the only external database snapshot connector currently implemented. Other SQL database systems are not yet supported.
 
----
+## Project structure
 
-## 🚀 Step-by-Step Setup Guide
+- `backend/` — NestJS API, SQLite group databases, PostgreSQL snapshot import, LangChain/OpenRouter integration.
+- `frontend/` — React/Vite application using TanStack Query, shadcn/ui, Tailwind CSS, and Recharts.
 
-Follow these instructions to set up and run the project locally.
+## Prerequisites
 
-### 📋 Prerequisites
+- Node.js 18 or later
+- npm
+- An OpenRouter API key for AI-powered recommendations and query generation
+- PostgreSQL access only if you plan to use the PostgreSQL snapshot import
 
-Ensure you have **Node.js** (v18 or higher) installed:
-```bash
+```powershell
 node -v
 npm -v
 ```
 
-### 🗄️ Database (SQLite)
-This project uses **SQLite**, which is a serverless, zero-configuration database engine.
-- **Do I need to install an SQLite server?** No. SQLite is embedded directly into the Node.js backend. Running `npm install` in the `backend` folder will automatically install the `sqlite3` library. The database file will be automatically created as `backend/db.sqlite` when you launch the backend.
-- **Optional (To inspect database files manually)**:
-  - You can install a GUI manager like **[DB Browser for SQLite](https://sqlitebrowser.org/)** to open and inspect the `db.sqlite` file.
-  - Or, if you are using VS Code, install the **SQLite Viewer** extension.
+## Backend setup
 
+```powershell
+cd backend
+npm install
+```
 
----
+Create `backend/.env`:
 
-### 🖥️ Step 1: Backend Setup
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 
-1. **Navigate to the backend folder**:
-   ```powershell
-   cd backend
-   ```
+# Required only for PostgreSQL snapshots
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_postgres_password
+POSTGRES_DATABASE=your_database_name
+POSTGRES_SCHEMA=public
 
-2. **Install dependencies**:
-   ```powershell
-   npm install
-   ```
+# Optional comma-separated default exclusions
+POSTGRES_EXCLUDED_TABLES=
+```
 
-3. **Configure Environment Variables**:
-   Ensure you have a `.env` file in the `backend/` directory with your OpenRouter API key.
-   - Path: `backend/.env`
-   - Content:
-     ```env
-     OPENROUTER_API_KEY=your_openrouter_api_key_here
-     ```
+Start the API:
 
-4. **Run the backend**:
-   ```powershell
-   npm run start:dev
-   ```
-   The server starts on `http://localhost:3000`.
+```powershell
+npm run start:dev
+```
 
----
+The backend runs on `http://localhost:3000`. SQLite database files are created under `backend/databases/` as groups are created or imported.
 
-### 🎨 Step 2: Frontend Setup
+## Frontend setup
 
-Open a **new terminal window** and run the following:
+Open a second terminal:
 
-1. **Navigate to the frontend folder**:
-   ```powershell
-   cd frontend
-   ```
+```powershell
+cd frontend
+npm install
+```
 
-2. **Install dependencies**:
-   ```powershell
-   npm install
-   ```
+Create `frontend/.env`:
 
-3. **Configure Environment Variables**:
-   Ensure you have a `.env` file in the `frontend/` directory pointing to the backend.
-   - Path: `frontend/.env`
-   - Content:
-     ```env
-     VITE_API_BASE_URL=http://localhost:3000
-     ```
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
 
-4. **Run the frontend**:
-   ```powershell
-   npm run dev
-   ```
-   Open the local server URL (usually `http://localhost:5173`) in your web browser.
+Start the frontend:
+
+```powershell
+npm run dev
+```
+
+Open the URL printed by Vite, usually `http://localhost:5173`.
+
+## Typical workflow
+
+1. Create a group.
+2. Upload CSV files or import a PostgreSQL snapshot.
+3. Open a table to inspect data, generate suggested questions, or run a natural-language query.
+4. Use **Query Group** when the answer needs multiple tables.
+5. Review saved results in the table or group query-results tab.
+
+## SQLite notes
+
+SQLite is embedded through the Node.js `sqlite3` dependency—no SQLite server installation is required. You can inspect group database files with DB Browser for SQLite or a compatible VS Code extension.

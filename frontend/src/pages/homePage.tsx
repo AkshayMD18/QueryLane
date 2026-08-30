@@ -34,9 +34,9 @@ const HomePage = () => {
         }
     };
 
-    const handlePostgresSnapshot = async ({ databaseName, schemaName, excludedTables }: PostgresSnapshotRequest) => {
+    const handlePostgresSnapshot = async (request: PostgresSnapshotRequest) => {
         try {
-            const snapshot = await createPostgresSnapshot({ databaseName, schemaName, excludedTables });
+            const snapshot = await createPostgresSnapshot(request);
             console.log("PostgreSQL snapshot response:", snapshot);
             console.log("Tables received:", snapshot?.tables?.length ?? 0);
             alert(`PostgreSQL snapshot completed. Tables received: ${snapshot?.tables?.length ?? 0}`);

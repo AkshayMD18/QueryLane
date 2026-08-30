@@ -106,7 +106,7 @@ export const GroupPage = () => {
             />
 
             <Tabs defaultValue="tables" className="w-full">
-                <TabsList className="mb-5 max-w-full overflow-x-auto">
+                <TabsList className="mb-5 max-w-full overflow-hidden">
                     <TabsTrigger value="tables">Group Tables</TabsTrigger>
                     <TabsTrigger value="results">Query Results</TabsTrigger>
                 </TabsList>

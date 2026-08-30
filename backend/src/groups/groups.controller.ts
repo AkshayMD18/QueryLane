@@ -33,7 +33,14 @@ export class GroupsController {
   @Post('postgres-snapshot')
   createPostgresSnapshot(@Body() snapshotDto: CreatePostgresSnapshotDto) {
     return this.groupsService.getSnapshot(
-      snapshotDto.databaseName,
+      {
+        host: snapshotDto.host,
+        port: snapshotDto.port,
+        user: snapshotDto.user,
+        password: snapshotDto.password,
+        database: snapshotDto.databaseName,
+        connectionString: snapshotDto.connectionString,
+      },
       snapshotDto.schemaName,
       snapshotDto.excludedTables ?? [],
     );
